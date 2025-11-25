@@ -18,3 +18,9 @@ venv/
 .DS_Store
 Thumbs.db
 ehthumbs.db
+
+# Editor backups
+*~
+*.swp
+*.swo
+*.un~
