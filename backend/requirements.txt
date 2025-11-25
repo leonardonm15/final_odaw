@@ -1,0 +1,11 @@
+fastapi
+uvicorn
+psycopg2-binary
+python-dotenv
+passlib[bcrypt]
+python-multipart
+pytest
+httpx
+pytest-asyncio
+python-multipart
+

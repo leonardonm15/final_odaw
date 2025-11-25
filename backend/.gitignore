@@ -1,0 +1,20 @@
+# Python / FastAPI
+__pycache__/
+*.py[cod]
+*.pyo
+*.so
+.pytest_cache/
+.coverage
+
+# Environments
+venv/
+.env
+
+# IDE / tooling
+.vscode/
+.idea/
+
+# OS noise
+.DS_Store
+Thumbs.db
+ehthumbs.db
