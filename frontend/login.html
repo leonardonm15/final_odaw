@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Login - ODAW</title>
+  <link rel="stylesheet" href="login.css">
+</head>
+
+<body>
+  <div class="wrap">
+
+    <div class="arc left-bottom" aria-hidden="true"></div>
+    <div class="arc right-top" aria-hidden="true"></div>
+
+    <div class="card">
+      <h2 class="title">Login</h2>
+
+      <form id="loginForm" class="form" novalidate>
+        <label for="email">Email:</label>
+        <input type="email" id="email" required placeholder="email@exemplo.com">
+
+        <label for="senha">Senha:</label>
+        <input type="password" id="senha" required placeholder="••••••••">
+
+        <button type="submit" class="btn-welcome">Entrar</button>
+      </form>
+
+      <div id="message" class="msg" role="status" aria-live="polite"></div>
+
+      <a href="index.html" class="action-link">Voltar</a>
+    </div>
+  </div>
+
+  <script>
+    document.getElementById('loginForm').addEventListener('submit', async (ev) => {
+      ev.preventDefault();
+
+      const email = document.getElementById('email').value;
+      const senha = document.getElementById('senha').value;
+
+      try {
+        const res = await fetch("http://127.0.0.1:8000/login", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ email, senha })
+        });
+
+        const data = await res.json();
+
+        if(res.ok){
+          /* document.getElementById('message').textContent = "Login realizado!"; */
+          console.log("Redirecionando...");
+          window.location.replace("tela_inicial.html");
+        } else {
+          document.getElementById('message').textContent = data.detail || "Erro no login.";
+        }
+      } catch (e){
+        document.getElementById('message').textContent = "Erro de conexão.";
+      }
+    });
+  </script>
+
+</body>
+</html>

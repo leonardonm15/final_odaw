@@ -1,0 +1,179 @@
+:root{
+  --bg: #000;
+  --blue: #5fb0e6;
+  --white-90: rgba(255,255,255,0.95);
+  --muted: rgba(255,255,255,0.88);
+  --accent: #79a6e0;
+}
+
+/* reset */
+*{box-sizing:border-box}
+html,body{height:100%;margin:0;font-family: "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;-webkit-font-smoothing:antialiased;-moz-osx-font-smoothing:grayscale}
+body{background:var(--bg);color:var(--muted)}
+
+/* Stage ocupa tela inteira */
+.stage{
+  position:relative;
+  min-height:100vh;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  overflow:hidden;
+  padding:3.5rem;
+}
+
+/* Arco decorativo */
+.arc{
+    position:absolute;
+    border:70px solid #fff;
+    border-radius:50%;
+    opacity:0.05;
+}
+
+.left-bottom{
+    width:600px;
+    height:600px;
+    bottom:-20%;
+    left:-12%;
+}
+
+/* Asteriscos */
+.asterisk {
+    position:absolute;
+    transform: scale(2);
+    color:var(--accent);
+}
+
+.asterisk.left-top {
+    left:40px;
+    top:35px;
+}
+
+.asterisk.right-bottom {
+    right:40px;
+    bottom:35px;
+}
+
+/* Topbar com link 'Meu perfil' no canto superior direito */
+/* Topbar com link 'Meu perfil' no canto superior direito */
+.topbar{
+  position:absolute;
+  top:0;
+  left:0;
+  right:0;
+  height:7.5rem;          /* aumentei de 6rem para 7.5rem */
+  display:flex;
+  align-items:flex-start;
+  justify-content:flex-end;
+  padding:2.5rem 4.5rem;  /* padding maior para dar mais espaço */
+  z-index:4;
+  pointer-events:none;     /* itens dentro sobrescrevem para clique quando necessário */
+}
+
+.profile-link{
+  pointer-events:auto;
+  text-decoration:none;
+  color:var(--white-90);
+  font-weight:700;
+  font-size:1.2rem;       /* aumenta o tamanho do texto do link */
+  padding-bottom:0.4rem;
+  position:relative;
+  display:inline-block;
+}
+
+.profile-link::after{
+  content:"";
+  display:block;
+  width:105%;               /* ligeiro aumento da linha */
+  height:4px;              /* linha mais grossa */
+  background:var(--blue);
+  margin-top:0.6rem;
+  border-radius:2px;
+}
+
+
+/* Conteúdo central (menu) */
+.center{
+  position:relative;
+  z-index:4;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  width:100%;
+  max-width:900px;
+  min-height:520px;
+  padding:2rem 4rem;
+  background:transparent;
+}
+
+/* Conteúdo central (menu) */
+.center{
+  position:relative;
+  z-index:4;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  width:100%;
+  max-width:1100px;   /* aumentei */
+  min-height:600px;   /* aumentei */
+  padding:3rem 5rem;  /* padding maior para dar espaço */
+  background:transparent;
+}
+
+/* Menu vertical central */
+.menu{
+  display:flex;
+  flex-direction:column;
+  gap:3rem;           
+  align-items:center;
+  justify-content:center;
+  text-align:center;
+  width:100%;
+}
+
+.menu-item{
+  color:var(--white-90);
+  text-decoration:none;
+  font-weight:700;
+  font-size:1.6rem;   
+  letter-spacing:0.2px;
+  padding:0.1rem 0;
+  position:relative;
+  display:inline-block;
+}
+.menu-item::after{
+  content:"";
+  display:block;
+  width:100%;
+  height:4px;         
+  background:var(--blue);
+  margin-top:1rem;
+  border-radius:2px;
+  margin-left:auto;
+  margin-right:auto;
+}
+
+/* Acessibilidade: foco visível nos links */
+.menu-item:focus,
+.profile-link:focus{
+  outline:3px solid rgba(95,176,230,0.14);
+  outline-offset:4px;
+  border-radius:4px;
+}
+
+/* Responsividade */
+@media (max-width:880px){
+  .arc.left-bottom{ left:-30vmin; bottom:-30vmin; width:140vmin; height:140vmin; transform: rotate(-8deg); }
+  .center{ min-height:480px; padding:1.25rem; }
+  .profile-link::after{ width:46%; }
+  .menu-item{ font-size:1rem; }
+  .asterisk{ width:56px; height:56px; }
+}
+@media (max-width:480px){
+  .stage{ padding:1rem; }
+  .asterisk.left-top{ left:1rem; top:1rem; }
+  .asterisk.right-bottom{ right:1rem; bottom:1rem; }
+  .profile-link{ font-size:0.95rem; }
+  .menu{ gap:1.6rem; }
+  .menu-item{ font-size:0.98rem; }
+}

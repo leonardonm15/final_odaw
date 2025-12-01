@@ -1,0 +1,55 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>ODAW - Tela Inicial</title>
+  <!-- importante: certifique-se de que este arquivo está no mesmo diretório -->
+  <link rel="stylesheet" href="tela_inicial.css">
+</head>
+<body>
+  <div class="stage" role="main" aria-label="Tela inicial">
+
+    <!-- grande arco decorativo no canto inferior esquerdo -->
+    <div class="arc left-bottom" aria-hidden="true"></div>
+
+    <!-- decorative asterisks -->
+    <div class="asterisk left-top">
+      <svg width="48" height="48" viewBox="0 0 64 64">
+        <g stroke="currentColor" stroke-width="6" stroke-linecap="round">
+          <path d="M32 8 L32 56"/>
+          <path d="M8 32 L56 32"/>
+          <path d="M14 14 L50 50"/>
+          <path d="M50 14 L14 50"/>
+        </g>
+      </svg>
+    </div>
+
+    <div class="asterisk right-bottom">
+      <svg width="48" height="48" viewBox="0 0 64 64">
+        <g stroke="currentColor" stroke-width="6" stroke-linecap="round">
+          <path d="M32 8 L32 56"/>
+          <path d="M8 32 L56 32"/>
+          <path d="M14 14 L50 50"/>
+          <path d="M50 14 L14 50"/>
+        </g>
+      </svg>
+    </div>
+
+    <!-- header / link de perfil -->
+    <header class="topbar" role="banner">
+        <a href="#" class="profile-link">Meu perfil</a>
+    </header>
+
+    <!-- conteúdo central: menu com 3 itens (substitua os href conforme suas páginas) -->
+    <section class="center" role="region" aria-label="Menu principal">
+      <nav class="menu" role="navigation" aria-label="Opções principais">
+        <a href="explorar.html" class="menu-item">Explorar músicas</a>
+        <a href="minhas_musicas.html" class="menu-item">Minhas músicas</a>
+        <a href="playlists.html" class="menu-item">Minhas playlists</a>
+      </nav>
+    </section>
+
+  </div>
+</body>
+</html>

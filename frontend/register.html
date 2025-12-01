@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Cadastro - ODAW</title>
+  <link rel="stylesheet" href="register.css">
+</head>
+<body>
+
+  <div class="arc left-bottom" aria-hidden="true"></div>
+  <div class="arc right-top" aria-hidden="true"></div>
+
+  <main class="wrap" role="main" aria-label="Formulário de Cadastro">
+    <section class="card" aria-labelledby="title-cadastro">
+      <h2 id="title-cadastro" class="title">Cadastro de Usuário</h2>
+
+      <form id="registerForm" class="form" novalidate>
+        <label for="nome">Nome:</label>
+        <input type="text" id="nome" name="nome" placeholder="Seu nome completo" required />
+
+        <label for="email">Email:</label>
+        <input type="email" id="email" name="email" placeholder="email@exemplo.com" required />
+
+        <label for="senha">Senha:</label>
+        <input type="password" id="senha" name="senha" placeholder="••••••••" required />
+
+        <button type="submit" class="btn-welcome">Cadastrar</button>
+      </form>
+
+      <div id="message" class="msg" role="status" aria-live="polite"></div>
+
+      <a href="index.html" class="action-link">Voltar</a>
+    </section>
+  </main>
+
+  <script>
+    document.getElementById('registerForm').addEventListener('submit', async (ev) => {
+      ev.preventDefault();
+
+      const nome = document.getElementById('nome').value;
+      const email = document.getElementById('email').value;
+      const senha = document.getElementById('senha').value;
+
+      try {
+        const res = await fetch('http://127.0.0.1:8000/register', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ nome, email, senha })
+        });
+
+        const data = await res.json();
+
+        if (res.ok) {
+          document.getElementById('message').textContent = 'Cadastro realizado com sucesso!';
+        } else {
+          document.getElementById('message').textContent = data.detail || 'Erro no cadastro.';
+        }
+      } catch (err) {
+        document.getElementById('message').textContent = 'Erro de conexão com o servidor.';
+      }
+    });
+  </script>
+</body>
+</html>

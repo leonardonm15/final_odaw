@@ -1,0 +1,121 @@
+:root{
+    --bg:#000;
+    --accent:#79a6e0;
+    --text:#eaf1ff;
+}
+
+html,body{
+    height:100%;
+    margin:0;
+    font-family: Inter, Arial, sans-serif;
+    background: var(--bg);
+    color:var(--text);
+}
+
+.wrap{
+    min-height:100vh;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    position:relative;
+    overflow:hidden;
+}
+
+/* Arco inferior-esquerdo (left-bottom) */
+.arc.left-bottom {
+    position: absolute;
+    border: 70px solid rgb(255, 255, 255);
+    border-radius: 50%;
+    width: 600px;
+    height: 600px;
+    bottom: -20%;
+    left: -12%;
+    opacity: 0.05;
+}
+
+/* Arco superior-direito (right-top) */
+.arc.right-top {
+    position: absolute;
+    border: 70px solid rgb(255, 255, 255);
+    border-radius: 50%;
+    width: 590px;
+    height: 590px;
+    top: -20%;
+    right: -12%;
+    opacity: 0.05;
+}
+
+/* Asteriscos */
+.asterisk {
+    position:absolute;
+    transform: scale(2);
+    color:var(--accent);
+}
+
+.asterisk.left-top {
+    left:40px;
+    top:35px;
+}
+
+.asterisk.right-bottom {
+    right:40px;
+    bottom:35px;
+}
+
+/* Área central */
+.card {
+    z-index:5;
+    width:100%;
+    max-width:900px;
+    display:flex;
+    flex-direction:column;
+    align-items:center;
+    justify-content:center;
+    gap:42px;
+    padding:80px 20px;
+}
+
+/* Botão principal */
+.btn-welcome{
+    width:520px;
+    max-width:90%;
+    height:64px;
+    background:linear-gradient(180deg,var(--accent), #6d9ad7);
+    color: white;
+    border-radius:999px;
+    border:none;
+    font-weight:700;
+    font-size:22px;
+    cursor:pointer;
+    text-align:center;
+}
+
+/* Links Cadastro/Login */
+.links {
+    display:flex;
+    flex-direction:column;
+    align-items:center;
+    gap:26px;
+}
+
+.action-link {
+    width:260px;
+    text-align:center;
+    font-weight:600;
+    font-size:20px;
+    color:var(--text);
+    text-decoration:none;
+    position:relative;
+    padding-bottom:6px;
+}
+
+.action-link::after{
+    content:"";
+    position:absolute;
+    left:20%;
+    right:20%;
+    height:2px;
+    background: var(--accent);
+    bottom:0;
+    opacity:0.9;
+}

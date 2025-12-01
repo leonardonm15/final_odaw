@@ -1,0 +1,73 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>ODAW - Bem-vindo</title>
+
+<!-- Importa o CSS separado -->
+<link rel="stylesheet" href="index.css">
+
+</head>
+<body>
+  <div class="wrap" role="main" aria-label="Tela de boas-vindas">
+    
+    <!-- decorative arcs -->
+    <div class="arc left-bottom"></div>
+    <div class="arc right-top"></div>
+
+    <!-- decorative asterisks -->
+    <div class="asterisk left-top">
+      <svg width="48" height="48" viewBox="0 0 64 64">
+        <g stroke="currentColor" stroke-width="6" stroke-linecap="round">
+          <path d="M32 8 L32 56"/>
+          <path d="M8 32 L56 32"/>
+          <path d="M14 14 L50 50"/>
+          <path d="M50 14 L14 50"/>
+        </g>
+      </svg>
+    </div>
+
+    <div class="asterisk right-bottom">
+      <svg width="48" height="48" viewBox="0 0 64 64">
+        <g stroke="currentColor" stroke-width="6" stroke-linecap="round">
+          <path d="M32 8 L32 56"/>
+          <path d="M8 32 L56 32"/>
+          <path d="M14 14 L50 50"/>
+          <path d="M50 14 L14 50"/>
+        </g>
+      </svg>
+    </div>
+
+    <!-- content -->
+    <div class="card">
+      <button class="btn-welcome" id="welcomeBtn">Bem-vindo!</button>
+
+      <div class="links" role="navigation">
+        <a class="action-link" id="cadastroBtn" href="#">Cadastro</a>
+        <a class="action-link" id="loginBtn" href="#">Login</a>
+      </div>
+    </div>
+  </div>
+
+<script>
+// Botão principal
+document.getElementById('welcomeBtn').addEventListener('click', () => {
+    alert('Bem-vindo! Escolha Login ou Cadastro.');
+});
+
+// Cadastro
+document.getElementById('cadastroBtn').addEventListener('click', (ev) => {
+    ev.preventDefault();
+    window.location.href = "register.html";
+});
+
+// Login
+document.getElementById('loginBtn').addEventListener('click', (ev)=>{
+    ev.preventDefault();
+    window.location.href = "login.html"
+});
+</script>
+
+</body>
+</html>

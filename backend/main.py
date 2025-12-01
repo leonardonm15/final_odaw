@@ -19,8 +19,24 @@ from database import (
     playlists_by_user,
     musicas_por_album,
 )
+from fastapi.middleware.cors import CORSMiddleware
+from fastapi.staticfiles import StaticFiles
+from fastapi.responses import RedirectResponse, FileResponse
+
 
 app = FastAPI(title="Streaming Musical - Backend")
+
+# ====================== CORS ======================
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],  # ou restrinja para ["http://localhost:5500"]
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
+FRONTEND_DIR = Path(__file__).resolve().parent.parent / "frontend"
+app.mount("/static", StaticFiles(directory=str(FRONTEND_DIR)), name="static")
 
 # Pastas de arquivos: tenta usar APP_MEDIA_DIR (env) ou backend/media; se não conseguir, cai para /tmp
 def _ensure_dir(path: Path):
@@ -321,3 +337,11 @@ def get_capa(id_album: int):
         return FileResponse(f, media_type="image/jpeg")
 
     raise HTTPException(status_code=404, detail="Capa não encontrada.")
+
+@app.get("/ping")
+def ping():
+    return {"status": "ok"}
+
+@app.get("/")
+def root():
+    return RedirectResponse(url="/static/index.html")
