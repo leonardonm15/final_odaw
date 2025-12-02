@@ -92,6 +92,13 @@
       }
     }
 
+    function formatTime(sec) {
+      if (!isFinite(sec)) return "--:--";
+      const minutes = Math.floor(sec / 60);
+      const seconds = Math.floor(sec % 60);
+      return `${minutes}:${seconds.toString().padStart(2, "0")}`;
+    }
+
     // devolve a URL do arquivo de áudio da música
     function getMusicUrl(musica) {
       // Se o backend já retornar uma URL pronta, use ela:
@@ -99,10 +106,8 @@
       if (musica.url) return musica.url;
       if (musica.caminho) return `${API_BASE}/${musica.caminho}`;
 
-      // Fallback genérico baseado no id_musica:
-      // TROQUE esse caminho se o seu backend usar outro endpoint!
       if (musica.id_musica != null) {
-        return `${API_BASE}/musicas/arquivo/${musica.id_musica}`;
+        return `${API_BASE}/musicas/${musica.id_musica}/stream`;
       }
       return null;
     }
@@ -132,25 +137,26 @@
           musica.nome_musica ||
           `Música #${musica.id_musica || ""}`;
 
-        const detalhe =
-          musica.tipo ||
-          musica.formato ||
-          musica.mimetype ||
-          "";
-
         const url = getMusicUrl(musica);
 
         card.innerHTML = `
           <div class="music-title">${nome}</div>
           <div class="music-meta">
-            ${detalhe ? detalhe + " · " : ""}ID: ${musica.id_musica ?? "—"}
+            Gênero: ${musica.genero ?? "—"}
           </div>
           ${
             url
-              ? `<audio controls style="margin-top:8px;width:100%;">
-                   <source src="${url}">
-                   Seu navegador não suporta áudio HTML5.
-                 </audio>`
+              ? `<div class="player-shell">
+                   <button class="play-btn" type="button" aria-label="Tocar">${"▶"}</button>
+                   <div class="player-body">
+                     <div class="time-row">
+                       <span class="time current">0:00</span>
+                       <span class="time duration">--:--</span>
+                     </div>
+                     <input class="progress" type="range" min="0" value="0" step="0.01">
+                   </div>
+                   <audio preload="none" data-src="${url}"></audio>
+                 </div>`
               : `<div class="music-meta" style="margin-top:8px;color:#ffb3b3;">
                    (Não foi possível determinar a URL do áudio)
                  </div>`
@@ -158,6 +164,67 @@
         `;
 
         grid.appendChild(card);
+
+        // Liga o player customizado (play/pause + preload leve)
+        if (url) {
+          const playBtn = card.querySelector(".play-btn");
+          const audio = card.querySelector("audio");
+          const progress = card.querySelector(".progress");
+          const currentEl = card.querySelector(".time.current");
+          const durationEl = card.querySelector(".time.duration");
+          // só atribui src quando o usuário interagir (evita pré-carregar tudo)
+          let isLoaded = false;
+
+          playBtn.addEventListener("click", () => {
+            // pausa outros áudios
+            document.querySelectorAll(".music-card audio").forEach((other) => {
+              if (other !== audio) {
+                other.pause();
+                other.currentTime = 0;
+                const btn = other.closest(".player-shell")?.querySelector(".play-btn");
+                if (btn) btn.textContent = "▶";
+              }
+            });
+
+            if (!isLoaded) {
+              audio.src = audio.dataset.src;
+              isLoaded = true;
+            }
+
+            if (audio.paused) {
+              audio.play();
+              playBtn.textContent = "⏸";
+            } else {
+              audio.pause();
+              playBtn.textContent = "▶";
+            }
+          });
+
+          audio.addEventListener("ended", () => {
+            playBtn.textContent = "▶";
+          });
+
+          audio.addEventListener("loadedmetadata", () => {
+            durationEl.textContent = formatTime(audio.duration);
+            progress.max = audio.duration || 0;
+          });
+
+          audio.addEventListener("timeupdate", () => {
+            if (!isNaN(audio.currentTime)) {
+              progress.value = audio.currentTime;
+              currentEl.textContent = formatTime(audio.currentTime);
+            }
+          });
+
+          progress.addEventListener("input", () => {
+            if (!isLoaded) {
+              audio.src = audio.dataset.src;
+              isLoaded = true;
+            }
+            audio.currentTime = progress.value;
+            currentEl.textContent = formatTime(progress.value);
+          });
+        }
       });
     }
 
@@ -198,7 +265,7 @@
     }
 
     // Faz upload de uma música
-    async function uploadMusica(id_album, id_usuario) {
+    async function uploadMusica(id_album, id_usuario, id_playlist) {
       const fileInput = document.getElementById("fileInput");
       const msg = document.getElementById("uploadMsg");
       msg.style.color = "#ffb3b3";
@@ -211,13 +278,22 @@
 
       const file = fileInput.files[0];
 
+      const nomeInferido = file.name ? file.name.replace(/\.[^/.]+$/, "") : "Nova música";
       const formData = new FormData();
       // ⚠️ Se no backend o nome do campo for diferente, troca aqui
+      formData.append("nome", nomeInferido);
+      formData.append("genero", "Desconhecido");
+      formData.append("duracao_seg", 0);
+      formData.append("id_album", id_album);
+      formData.append("id_usuario", id_usuario);
+      if (id_playlist) {
+        formData.append("id_playlist", id_playlist);
+      }
       formData.append("arquivo", file);
 
       try {
         const res = await fetch(
-          `${API_BASE}/musicas?id_album=${encodeURIComponent(id_album)}`,
+          `${API_BASE}/musicas/criar`,
           {
             method: "POST",
             body: formData,
@@ -257,6 +333,7 @@
       const params = new URLSearchParams(window.location.search);
       const id_album = params.get("id_album");
       const readonly = params.get("readonly") === "1"; // 👈 modo somente leitura
+      const id_playlist = params.get("id_playlist"); // opcional: se quiser já vincular a uma playlist
 
       if (!id_album) {
         document.getElementById("emptyState").textContent =
@@ -287,7 +364,7 @@
         const uploadButton = document.getElementById("uploadButton");
         if (uploadButton) {
           uploadButton.addEventListener("click", () =>
-            uploadMusica(id_album, user.id_usuario)
+            uploadMusica(id_album, user.id_usuario, id_playlist)
           );
         }
       }

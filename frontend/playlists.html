@@ -36,19 +36,27 @@
         <h2>Nova playlist</h2>
         <form id="playlistForm">
           <div class="form-row">
-            <label for="nomeMusica">Nome da música</label>
-            <input id="nomeMusica" name="nomeMusica" type="text" required>
+            <label for="nomePlaylist">Nome da playlist</label>
+            <input id="nomePlaylist" name="nomePlaylist" type="text" required>
           </div>
 
-          <div class="form-row">
-            <label for="artista">Nome da banda / artista</label>
-            <input id="artista" name="artista" type="text" required>
-          </div>
+          <p id="formMessage" class="msg" aria-live="polite" style="min-height:1.2em;"></p>
 
-          <div class="form-row">
-            <label for="ano">Ano de lançamento</label>
-            <input id="ano" name="ano" type="number" min="1900" max="2100" required>
-          </div>
+          <section class="catalogo">
+            <div class="catalogo-header">
+              <div>
+                <h3>Adicionar músicas existentes</h3>
+                <p class="muted">Busque por nome e selecione as faixas para entrar na nova playlist.</p>
+              </div>
+              <div class="catalogo-actions">
+                <input id="buscaMusicas" type="search" placeholder="Filtrar por nome…">
+                <button type="button" id="btnLimparBusca" class="ghost-button ghost-compact">Listar todas</button>
+              </div>
+            </div>
+
+            <div id="musicasEstado" class="muted" style="margin-bottom:8px;"></div>
+            <div id="musicasList" class="musicas-list"></div>
+          </section>
 
           <div class="form-actions">
             <button type="submit" class="primary-button">Salvar playlist</button>
@@ -67,26 +75,315 @@
       </section>
     </main>
   </div>
+  <!-- Modal de edição de playlist -->
+  <div id="playlistModal" class="modal hidden" aria-hidden="true">
+    <div class="modal-content">
+      <header class="modal-header">
+        <div>
+          <p class="muted" style="margin:0;">Editar playlist</p>
+          <h2 id="modalTitulo" style="margin:4px 0 0;"></h2>
+        </div>
+        <div class="modal-actions">
+          <button id="btnDeletePlaylist" class="ghost-button danger" type="button">Excluir</button>
+          <button id="modalClose" class="ghost-button" type="button">Fechar</button>
+        </div>
+      </header>
+
+      <section class="modal-body">
+        <div class="tab-buttons">
+          <button id="tabGerenciar" class="tab-button is-active" type="button">Gerenciar</button>
+          <button id="tabTocar" class="tab-button" type="button">Tocar</button>
+        </div>
+
+        <div id="abaGerenciar" class="tab-panel is-active">
+          <div class="form-row">
+            <label for="modalNome">Nome da playlist</label>
+            <input id="modalNome" type="text">
+          </div>
+          <button id="btnSalvarNome" class="primary-button" type="button" style="margin-bottom:10px;">Salvar nome</button>
+          <p id="modalMsg" class="msg" aria-live="polite" style="min-height:1.1em;"></p>
+
+          <hr style="border:1px solid #1f1f1f;border-width:1px 0 0;margin:16px 0;">
+
+          <div class="catalogo">
+            <div class="catalogo-header">
+              <div>
+                <h3>Músicas na playlist</h3>
+                <p class="muted">Remova ou adicione músicas.</p>
+              </div>
+              <input id="modalBusca" type="search" placeholder="Filtrar por nome…">
+            </div>
+            <div id="modalEstado" class="muted" style="margin-bottom:8px;"></div>
+            <div id="modalList" class="musicas-list"></div>
+          </div>
+
+          <div class="catalogo" style="margin-top:12px;">
+            <div class="catalogo-header">
+              <div>
+                <h3>Adicionar músicas disponíveis</h3>
+                <p class="muted">Liste todas as faixas da plataforma ou filtre pelo nome.</p>
+              </div>
+              <input id="modalBuscaAdd" type="search" placeholder="Filtrar por nome…">
+            </div>
+            <div id="modalEstadoAdd" class="muted" style="margin-bottom:8px;"></div>
+            <div id="modalListAdd" class="musicas-list"></div>
+            <div class="form-actions" style="justify-content:flex-end;margin-top:12px;">
+              <button id="btnAddSelecionadas" type="button" class="primary-button">Adicionar selecionadas</button>
+            </div>
+          </div>
+        </div>
+
+        <div id="abaTocar" class="tab-panel">
+          <div class="catalogo">
+            <div class="catalogo-header">
+              <div>
+                <h3>Ouvir playlist</h3>
+                <p class="muted">Clique em uma faixa para tocar.</p>
+              </div>
+            </div>
+            <div id="playerEstado" class="muted" style="margin-bottom:8px;"></div>
+            <div id="playerList" class="musicas-list"></div>
+          </div>
+        </div>
+      </section>
+    </div>
+  </div>
 
   <script>
+    const API_BASE = window.location.origin || "http://localhost:8000";
+
     const openFormButton  = document.getElementById('openFormButton');
     const cancelFormButton = document.getElementById('cancelFormButton');
     const formWrapper     = document.getElementById('formWrapper');
     const playlistForm    = document.getElementById('playlistForm');
     const playlistsGrid   = document.getElementById('playlistsGrid');
     const emptyState      = document.getElementById('emptyState');
+    const formMessage     = document.getElementById('formMessage');
+    const musicasList     = document.getElementById('musicasList');
+    const musicasEstado   = document.getElementById('musicasEstado');
+    const buscaMusicas    = document.getElementById('buscaMusicas');
+    const btnLimparBusca  = document.getElementById('btnLimparBusca');
+    const modal           = document.getElementById('playlistModal');
+    const modalClose      = document.getElementById('modalClose');
+    const modalTitulo     = document.getElementById('modalTitulo');
+    const modalNome       = document.getElementById('modalNome');
+    const btnSalvarNome   = document.getElementById('btnSalvarNome');
+    const modalMsg        = document.getElementById('modalMsg');
+    const modalBusca      = document.getElementById('modalBusca');
+    const modalEstado     = document.getElementById('modalEstado');
+    const modalList       = document.getElementById('modalList');
+    const modalBuscaAdd   = document.getElementById('modalBuscaAdd');
+    const modalEstadoAdd  = document.getElementById('modalEstadoAdd');
+    const modalListAdd    = document.getElementById('modalListAdd');
+    const btnAddSelecionadas = document.getElementById('btnAddSelecionadas');
+    const btnDeletePlaylist = document.getElementById('btnDeletePlaylist');
+    const tabGerenciar    = document.getElementById('tabGerenciar');
+    const tabTocar        = document.getElementById('tabTocar');
+    const abaGerenciar    = document.getElementById('abaGerenciar');
+    const abaTocar        = document.getElementById('abaTocar');
+    const playerList      = document.getElementById('playerList');
+    const playerEstado    = document.getElementById('playerEstado');
 
     let playlists = [];
+    let musicasDisponiveis = [];
+    const musicasSelecionadas = new Set();
+    let currentUser = null;
+    let playlistEmEdicao = null;
+    let musicasDaPlaylist = [];
+    let musicasDisponiveisModal = [];
+    const musicasSelecionadasModal = new Set();
+    let abaAtual = "gerenciar";
+
+    function trocarAba(aba) {
+      abaAtual = aba;
+      const isGerenciar = aba === "gerenciar";
+      tabGerenciar.classList.toggle("is-active", isGerenciar);
+      tabTocar.classList.toggle("is-active", !isGerenciar);
+      abaGerenciar.classList.toggle("is-active", isGerenciar);
+      abaTocar.classList.toggle("is-active", !isGerenciar);
+    }
+
+    function getUsuarioLogado() {
+      try {
+        const raw =
+          localStorage.getItem("usuarioLogado") ||
+          localStorage.getItem("usuariologado") ||
+          localStorage.getItem("app_user") ||
+          sessionStorage.getItem("usuarioLogado") ||
+          sessionStorage.getItem("app_user");
+
+        if (!raw) return null;
+        const user = JSON.parse(raw);
+        if (!user) return null;
+        const id = user.id_usuario ?? user.id;
+        if (id === undefined || id === null) return null;
+        return { ...user, id_usuario: id };
+      } catch (e) {
+        console.error("Erro ao ler usuarioLogado", e);
+        return null;
+      }
+    }
+
+    // Fallback opcional: permite informar o ID manualmente (útil se localStorage estiver vazio por mudança de host/porta)
+    function promptIdUsuario() {
+      const idStr = prompt("Informe seu ID de usuário (fallback):");
+      if (!idStr) return null;
+      const idParsed = parseInt(idStr, 10);
+      if (Number.isNaN(idParsed)) return null;
+      const fakeUser = { id_usuario: idParsed, nome: "Usuário", email: "" };
+      localStorage.setItem("usuarioLogado", JSON.stringify(fakeUser));
+      return fakeUser;
+    }
+
+    async function carregarPlaylists(id_usuario) {
+      emptyState.textContent = "Carregando suas playlists…";
+      emptyState.style.display = "block";
+
+      try {
+        const res = await fetch(`${API_BASE}/usuarios/${id_usuario}/playlists`);
+        const data = await res.json();
+
+        if (!res.ok) {
+          emptyState.textContent = data.detail || "Erro ao carregar playlists.";
+          playlists = [];
+          renderPlaylists();
+          return;
+        }
+
+        playlists = Array.isArray(data) ? data : [];
+        renderPlaylists();
+      } catch (e) {
+        console.error("Erro ao buscar playlists:", e);
+        emptyState.textContent = "Erro de conexão ao buscar playlists.";
+        playlists = [];
+        renderPlaylists();
+      }
+    }
+
+    async function carregarMusicasDisponiveis(filtroNome = "") {
+      musicasEstado.textContent = "Carregando músicas disponíveis…";
+      musicasList.innerHTML = "";
+      musicasSelecionadas.clear();
+
+      try {
+        const url = new URL(`${API_BASE}/musicas`);
+        if (filtroNome.trim()) {
+          url.searchParams.set("nome", filtroNome.trim());
+        }
+        const res = await fetch(url.toString());
+        const data = await res.json();
+
+        if (!res.ok) {
+          musicasEstado.textContent = data.detail || "Erro ao carregar músicas.";
+          musicasDisponiveis = [];
+          return;
+        }
+
+        musicasDisponiveis = Array.isArray(data) ? data : [];
+        musicasEstado.textContent = `${musicasDisponiveis.length} música(s) encontradas`;
+        renderMusicasDisponiveis();
+      } catch (e) {
+        console.error("Erro ao buscar músicas:", e);
+        musicasEstado.textContent = "Erro de conexão ao buscar músicas.";
+        musicasDisponiveis = [];
+      }
+    }
+
+    function renderMusicasDisponiveis() {
+      musicasList.innerHTML = "";
+      if (!musicasDisponiveis.length) {
+        musicasList.innerHTML = `<p class="muted" style="text-align:center;margin:16px 0;">Nenhuma música encontrada. Limpe o filtro para listar todas.</p>`;
+        return;
+      }
+
+      musicasDisponiveis.forEach((m) => {
+        const item = document.createElement("label");
+        item.className = "musica-item";
+        const id = m.id_musica ?? m.id;
+        const nome = m.nome || m.titulo || m.nome_musica || `Música #${id || ""}`;
+        const genero = m.genero || "Gênero não informado";
+        const album = m.id_album ? `Álbum #${m.id_album}` : "";
+
+        item.innerHTML = `
+          <input type="checkbox" data-id="${id}">
+          <div class="musica-info">
+            <div class="musica-nome">${nome}</div>
+            <div class="musica-meta">${genero}${album ? " · " + album : ""}</div>
+          </div>
+        `;
+
+        const checkbox = item.querySelector("input");
+        checkbox.addEventListener("change", (ev) => {
+          if (ev.target.checked) {
+            musicasSelecionadas.add(id);
+          } else {
+            musicasSelecionadas.delete(id);
+          }
+        });
+
+        musicasList.appendChild(item);
+      });
+    }
+
+    async function adicionarMusicasNaPlaylist(id_playlist) {
+      if (!musicasSelecionadas.size) return;
+
+      const ids = Array.from(musicasSelecionadas);
+      for (const mid of ids) {
+        try {
+          const res = await fetch(`${API_BASE}/playlists/${id_playlist}/add/${mid}`, {
+            method: "POST",
+          });
+          if (!res.ok) {
+            console.warn("Falha ao adicionar música", mid, "na playlist", id_playlist);
+          }
+        } catch (e) {
+          console.error("Erro ao adicionar música", mid, e);
+        }
+      }
+    }
+
+    async function criarPlaylist(nome, id_usuario) {
+      formMessage.textContent = "";
+
+      try {
+        const res = await fetch(
+          `${API_BASE}/playlists/${id_usuario}?nome=${encodeURIComponent(nome)}`,
+          { method: "POST" }
+        );
+        const data = await res.json();
+
+        if (!res.ok) {
+          formMessage.textContent = data.detail || "Não foi possível criar a playlist.";
+          formMessage.style.color = "#ffb3b3";
+          return;
+        }
+
+        formMessage.style.color = "#9ae6b4";
+        formMessage.textContent = "Playlist criada!";
+        const id_playlist = data.id_playlist;
+        await adicionarMusicasNaPlaylist(id_playlist);
+        await carregarPlaylists(id_usuario);
+        toggleForm(false);
+      } catch (e) {
+        console.error("Erro ao criar playlist:", e);
+        formMessage.style.color = "#ffb3b3";
+        formMessage.textContent = "Erro de conexão ao criar playlist.";
+      }
+    }
 
     function toggleForm(show) {
       if (show) {
         formWrapper.classList.remove('is-hidden');
         formWrapper.setAttribute('aria-hidden', 'false');
-        document.getElementById('nomeMusica').focus();
+        document.getElementById('nomePlaylist').focus();
+        // garante que a lista de músicas é carregada toda vez que abrir
+        carregarMusicasDisponiveis();
       } else {
         formWrapper.classList.add('is-hidden');
         formWrapper.setAttribute('aria-hidden', 'true');
         playlistForm.reset();
+        formMessage.textContent = "";
       }
     }
 
@@ -94,6 +391,7 @@
       playlistsGrid.innerHTML = '';
 
       if (playlists.length === 0) {
+        emptyState.textContent = "Você ainda não adicionou nenhuma playlist.";
         emptyState.style.display = 'block';
         return;
       }
@@ -104,6 +402,9 @@
         const card = document.createElement('article');
         card.className = 'playlist-card';
 
+        const titulo = p.nome || `Playlist #${p.id_playlist ?? ''}`;
+        const pid = p.id_playlist ?? p.id;
+
         card.innerHTML = `
           <div class="card-cover">
             <div class="cover-stack">
@@ -111,10 +412,13 @@
               <div class="cover-layer front"></div>
             </div>
           </div>
-          <h2 class="playlist-title">${p.nomeMusica}</h2>
-          <p class="playlist-artist">${p.artista}</p>
-          <p class="playlist-meta">Ano de lançamento: ${p.ano}</p>
+          <h2 class="playlist-title">${titulo}</h2>
+          <p class="playlist-meta">ID: ${pid ?? '—'}</p>
         `;
+
+        card.addEventListener("click", () => {
+          abrirModalEdicao(pid, titulo);
+        });
 
         playlistsGrid.appendChild(card);
       });
@@ -126,31 +430,388 @@
     playlistForm.addEventListener('submit', (event) => {
       event.preventDefault();
 
-      const nomeMusica = document.getElementById('nomeMusica').value.trim();
-      const artista    = document.getElementById('artista').value.trim();
-      const ano        = document.getElementById('ano').value.trim();
+      const nomePlaylist = document.getElementById('nomePlaylist').value.trim();
+      const id_usuario = currentUser?.id_usuario || playlistForm.dataset.idUsuario;
 
-      if (!nomeMusica || !artista || !ano) {
+      if (!nomePlaylist) {
+        formMessage.style.color = "#ffb3b3";
+        formMessage.textContent = "Informe um nome para a playlist.";
         return;
       }
 
-      playlists.push({ nomeMusica, artista, ano });
-      renderPlaylists();
-      toggleForm(false);
+      if (!id_usuario) {
+        formMessage.style.color = "#ffb3b3";
+        formMessage.textContent = "Usuário não identificado. Faça login novamente.";
+        return;
+      }
+
+      criarPlaylist(nomePlaylist, id_usuario);
     });
 
-    // Pré-preenche com 8 "álbuns" só pra ficar igual ao protótipo
-    playlists = [
-      { nomeMusica: 'Álbum 1', artista: 'Artistas', ano: '2024' },
-      { nomeMusica: 'Álbum 2', artista: 'Artistas', ano: '2024' },
-      { nomeMusica: 'Álbum 3', artista: 'Artistas', ano: '2024' },
-      { nomeMusica: 'Álbum 4', artista: 'Artistas', ano: '2024' },
-      { nomeMusica: 'Álbum 5', artista: 'Artistas', ano: '2024' },
-      { nomeMusica: 'Álbum 6', artista: 'Artistas', ano: '2024' },
-      { nomeMusica: 'Álbum 7', artista: 'Artistas', ano: '2024' },
-      { nomeMusica: 'Álbum 8', artista: 'Artistas', ano: '2024' }
-    ];
-    renderPlaylists();
+    function abrirModalEdicao(id_playlist, nome_atual) {
+      playlistEmEdicao = id_playlist;
+      modalNome.value = nome_atual || "";
+      modalTitulo.textContent = nome_atual || `Playlist #${id_playlist}`;
+      modalMsg.textContent = "";
+      trocarAba("gerenciar");
+      modal.classList.remove("hidden");
+      modal.setAttribute("aria-hidden", "false");
+      carregarMusicasPlaylist(id_playlist);
+      carregarMusicasDisponiveisModal();
+    }
+
+    function fecharModal() {
+      playlistEmEdicao = null;
+      modal.classList.add("hidden");
+      modal.setAttribute("aria-hidden", "true");
+      modalList.innerHTML = "";
+      musicasDaPlaylist = [];
+      musicasDisponiveisModal = [];
+      musicasSelecionadasModal.clear();
+    }
+
+    async function carregarMusicasPlaylist(id_playlist, filtro = "") {
+      modalEstado.textContent = "Carregando…";
+      modalList.innerHTML = "";
+      try {
+        const res = await fetch(`${API_BASE}/playlists/${id_playlist}/musicas`);
+        const data = await res.json();
+        if (!res.ok) {
+          modalEstado.textContent = data.detail || "Erro ao buscar músicas.";
+          musicasDaPlaylist = [];
+          return;
+        }
+        musicasDaPlaylist = Array.isArray(data) ? data : [];
+        if (filtro.trim()) {
+          const term = filtro.trim().toLowerCase();
+          musicasDaPlaylist = musicasDaPlaylist.filter((m) =>
+            (m.nome || "").toLowerCase().includes(term)
+          );
+        }
+        modalEstado.textContent = `${musicasDaPlaylist.length} música(s)`;
+        renderModalMusicas();
+        renderPlayerMusicas();
+      } catch (e) {
+        console.error("Erro ao buscar músicas da playlist:", e);
+        modalEstado.textContent = "Erro de conexão.";
+        musicasDaPlaylist = [];
+        renderPlayerMusicas();
+      }
+    }
+
+    async function carregarMusicasDisponiveisModal(filtro = "") {
+      modalEstadoAdd.textContent = "Carregando…";
+      modalListAdd.innerHTML = "";
+      musicasSelecionadasModal.clear();
+      try {
+        const url = new URL(`${API_BASE}/musicas`);
+        if (filtro.trim()) url.searchParams.set("nome", filtro.trim());
+        const res = await fetch(url.toString());
+        const data = await res.json();
+        if (!res.ok) {
+          modalEstadoAdd.textContent = data.detail || "Erro ao carregar músicas.";
+          musicasDisponiveisModal = [];
+          return;
+        }
+        musicasDisponiveisModal = Array.isArray(data) ? data : [];
+        modalEstadoAdd.textContent = `${musicasDisponiveisModal.length} música(s) encontradas`;
+        renderModalMusicasDisponiveis();
+      } catch (e) {
+        console.error("Erro ao buscar músicas disponíveis:", e);
+        modalEstadoAdd.textContent = "Erro de conexão.";
+        musicasDisponiveisModal = [];
+      }
+    }
+
+    function renderModalMusicasDisponiveis() {
+      modalListAdd.innerHTML = "";
+      if (!musicasDisponiveisModal.length) {
+        modalListAdd.innerHTML = `<p class="muted" style="text-align:center;margin:16px 0;">Nenhuma música encontrada.</p>`;
+        return;
+      }
+      // Evita mostrar as que já estão na playlist
+      const idsAtuais = new Set(musicasDaPlaylist.map((m) => m.id_musica ?? m.id));
+
+      musicasDisponiveisModal.forEach((m) => {
+        const id = m.id_musica ?? m.id;
+        if (idsAtuais.has(id)) return;
+        const nome = m.nome || m.titulo || m.nome_musica || `Música #${id || ""}`;
+        const genero = m.genero || "Sem gênero";
+        const item = document.createElement("label");
+        item.className = "musica-item";
+        item.innerHTML = `
+          <input type="checkbox" data-id="${id}">
+          <div class="musica-info">
+            <div class="musica-nome">${nome}</div>
+            <div class="musica-meta">${genero}</div>
+          </div>
+        `;
+        const checkbox = item.querySelector("input");
+        checkbox.addEventListener("change", (ev) => {
+          if (ev.target.checked) {
+            musicasSelecionadasModal.add(id);
+          } else {
+            musicasSelecionadasModal.delete(id);
+          }
+        });
+        modalListAdd.appendChild(item);
+      });
+    }
+
+    async function adicionarSelecionadasNaPlaylist() {
+      if (!playlistEmEdicao || !musicasSelecionadasModal.size) return;
+      const ids = Array.from(musicasSelecionadasModal);
+      for (const mid of ids) {
+        try {
+          const res = await fetch(`${API_BASE}/playlists/${playlistEmEdicao}/add/${mid}`, {
+            method: "POST",
+          });
+          if (!res.ok) {
+            console.warn("Falha ao adicionar música", mid);
+          }
+        } catch (e) {
+          console.error("Erro ao adicionar música", mid, e);
+        }
+      }
+      musicasSelecionadasModal.clear();
+      await carregarMusicasPlaylist(playlistEmEdicao, modalBusca.value);
+      await carregarMusicasDisponiveisModal(modalBuscaAdd.value);
+    }
+
+    function renderModalMusicas() {
+      modalList.innerHTML = "";
+      if (!musicasDaPlaylist.length) {
+        modalList.innerHTML = `<p class="muted" style="text-align:center;margin:16px 0;">Nenhuma música nesta playlist.</p>`;
+        return;
+      }
+      musicasDaPlaylist.forEach((m) => {
+        const id = m.id_musica ?? m.id;
+        const nome = m.nome || m.titulo || m.nome_musica || `Música #${id || ""}`;
+        const genero = m.genero || "Sem gênero";
+        const item = document.createElement("div");
+        item.className = "musica-item";
+        item.innerHTML = `
+          <div class="musica-info">
+            <div class="musica-nome">${nome}</div>
+            <div class="musica-meta">${genero}</div>
+          </div>
+          <button type="button" class="ghost-button remove-btn" data-id="${id}">Remover</button>
+        `;
+        item.querySelector(".remove-btn").addEventListener("click", () => {
+          removerMusicaDaPlaylist(playlistEmEdicao, id);
+        });
+        modalList.appendChild(item);
+      });
+    }
+
+    function formatTime(sec) {
+      if (!isFinite(sec)) return "--:--";
+      const m = Math.floor(sec / 60);
+      const s = Math.floor(sec % 60);
+      return `${m}:${s.toString().padStart(2, "0")}`;
+    }
+
+    function renderPlayerMusicas() {
+      playerList.innerHTML = "";
+      if (!musicasDaPlaylist.length) {
+        playerEstado.textContent = "Nenhuma música nesta playlist.";
+        return;
+      }
+      playerEstado.textContent = `${musicasDaPlaylist.length} música(s)`;
+      musicasDaPlaylist.forEach((m) => {
+        const id = m.id_musica ?? m.id;
+        const nome = m.nome || m.titulo || m.nome_musica || `Música #${id || ""}`;
+        const genero = m.genero || "Sem gênero";
+        const url = `${API_BASE}/musicas/${id}/stream`;
+
+        const item = document.createElement("div");
+        item.className = "musica-item player-item";
+        item.innerHTML = `
+          <div class="player-shell">
+            <button class="play-btn" type="button" aria-label="Tocar">▶</button>
+            <div class="player-body">
+              <div class="musica-nome">${nome}</div>
+              <div class="musica-meta">${genero}</div>
+              <div class="time-row">
+                <span class="time current">0:00</span>
+                <span class="time duration">--:--</span>
+              </div>
+              <input class="progress" type="range" min="0" value="0" step="0.01">
+            </div>
+            <audio preload="none" data-src="${url}"></audio>
+          </div>
+        `;
+
+        const playBtn = item.querySelector(".play-btn");
+        const audio = item.querySelector("audio");
+        const progress = item.querySelector(".progress");
+        const currentEl = item.querySelector(".time.current");
+        const durationEl = item.querySelector(".time.duration");
+        let isLoaded = false;
+
+        playBtn.addEventListener("click", () => {
+          // pausa outros players
+          document.querySelectorAll("#playerList audio").forEach((other) => {
+            if (other !== audio) {
+              other.pause();
+              other.currentTime = 0;
+              const btn = other.closest(".player-shell")?.querySelector(".play-btn");
+              if (btn) btn.textContent = "▶";
+              const cEl = other.closest(".player-shell")?.querySelector(".time.current");
+              const pEl = other.closest(".player-shell")?.querySelector(".progress");
+              if (cEl) cEl.textContent = "0:00";
+              if (pEl) pEl.value = 0;
+            }
+          });
+
+          if (!isLoaded) {
+            audio.src = audio.dataset.src;
+            isLoaded = true;
+          }
+
+          if (audio.paused) {
+            audio.play().catch((err) => console.warn("Não foi possível iniciar o áudio", err));
+            playBtn.textContent = "⏸";
+          } else {
+            audio.pause();
+            playBtn.textContent = "▶";
+          }
+        });
+
+        audio.addEventListener("loadedmetadata", () => {
+          durationEl.textContent = formatTime(audio.duration);
+          progress.max = audio.duration || 0;
+        });
+
+        audio.addEventListener("timeupdate", () => {
+          progress.value = audio.currentTime || 0;
+          currentEl.textContent = formatTime(audio.currentTime || 0);
+        });
+
+        progress.addEventListener("input", (ev) => {
+          const val = Number(ev.target.value);
+          if (!Number.isNaN(val)) {
+            audio.currentTime = val;
+          }
+        });
+
+        audio.addEventListener("ended", () => {
+          playBtn.textContent = "▶";
+          progress.value = 0;
+          currentEl.textContent = "0:00";
+        });
+
+        playerList.appendChild(item);
+      });
+    }
+
+    async function removerMusicaDaPlaylist(id_playlist, id_musica) {
+      try {
+        const res = await fetch(`${API_BASE}/playlists/${id_playlist}/musicas/${id_musica}`, {
+          method: "DELETE",
+        });
+        if (!res.ok) {
+          console.warn("Falha ao remover música", id_musica);
+        }
+        await carregarMusicasPlaylist(id_playlist, modalBusca.value);
+      } catch (e) {
+        console.error("Erro ao remover música:", e);
+      }
+    }
+
+    async function excluirPlaylistAtual() {
+      if (!playlistEmEdicao) return;
+      const ok = confirm("Deseja realmente excluir esta playlist? Todas as associações serão removidas.");
+      if (!ok) return;
+      try {
+        const res = await fetch(`${API_BASE}/playlists/${playlistEmEdicao}`, { method: "DELETE" });
+        const data = await res.json();
+        if (!res.ok) {
+          alert(data.detail || "Erro ao excluir playlist.");
+          return;
+        }
+        playlists = playlists.filter((p) => (p.id_playlist ?? p.id) !== playlistEmEdicao);
+        renderPlaylists();
+        fecharModal();
+      } catch (e) {
+        console.error("Erro ao excluir playlist:", e);
+        alert("Erro de conexão ao excluir playlist.");
+      }
+    }
+
+    async function salvarNomePlaylist() {
+      if (!playlistEmEdicao) return;
+      modalMsg.textContent = "";
+      const novoNome = modalNome.value.trim();
+      if (!novoNome) {
+        modalMsg.style.color = "#ffb3b3";
+        modalMsg.textContent = "Informe um nome.";
+        return;
+      }
+      try {
+        const formData = new FormData();
+        formData.append("nome", novoNome);
+        const res = await fetch(`${API_BASE}/playlists/${playlistEmEdicao}`, {
+          method: "PUT",
+          body: formData,
+        });
+        const data = await res.json();
+        if (!res.ok) {
+          modalMsg.style.color = "#ffb3b3";
+          modalMsg.textContent = data.detail || "Erro ao salvar.";
+          return;
+        }
+        modalMsg.style.color = "#9ae6b4";
+        modalMsg.textContent = "Nome atualizado.";
+        modalTitulo.textContent = novoNome;
+        await carregarPlaylists(playlistForm.dataset.idUsuario);
+      } catch (e) {
+        console.error("Erro ao renomear playlist:", e);
+        modalMsg.style.color = "#ffb3b3";
+        modalMsg.textContent = "Erro de conexão.";
+      }
+    }
+
+    modalClose.addEventListener("click", fecharModal);
+    btnDeletePlaylist.addEventListener("click", excluirPlaylistAtual);
+    btnSalvarNome.addEventListener("click", salvarNomePlaylist);
+    modalBusca.addEventListener("input", (ev) => {
+      carregarMusicasPlaylist(playlistEmEdicao, ev.target.value);
+    });
+    btnLimparBusca.addEventListener("click", () => {
+      buscaMusicas.value = "";
+      carregarMusicasDisponiveis();
+    });
+    tabGerenciar.addEventListener("click", () => trocarAba("gerenciar"));
+    tabTocar.addEventListener("click", () => trocarAba("tocar"));
+    modalBuscaAdd.addEventListener("input", (ev) => {
+      carregarMusicasDisponiveisModal(ev.target.value);
+    });
+    btnAddSelecionadas.addEventListener("click", adicionarSelecionadasNaPlaylist);
+    modal.addEventListener("click", (ev) => {
+      if (ev.target === modal) fecharModal();
+    });
+
+    document.addEventListener('DOMContentLoaded', () => {
+      let user = getUsuarioLogado();
+      if (!user || !user.id_usuario) {
+        // tenta fallback manual
+        user = promptIdUsuario();
+        if (!user) {
+          alert("Você precisa estar logado para ver suas playlists.");
+          window.location.href = "login.html";
+          return;
+        }
+      }
+
+      currentUser = user;
+      playlistForm.dataset.idUsuario = user.id_usuario;
+      carregarPlaylists(user.id_usuario);
+      carregarMusicasDisponiveis();
+      buscaMusicas.addEventListener("input", (ev) => {
+        carregarMusicasDisponiveis(ev.target.value);
+      });
+    });
   </script>
 </body>
 </html>

@@ -132,7 +132,8 @@
           titulo,
           artista,
           ano,
-          id_usuario
+          id_usuario,
+          nome_dono: user.nome || user.email || "Você"
         };
 
         salvarAlbumLocal(albumCompleto);

@@ -92,6 +92,12 @@ def create_album(titulo: str, ano: int, id_usuario: int):
     }
     return memory_db.albums[aid]
 
+def renomear_album(aid: int, titulo: str):
+    if aid not in memory_db.albums:
+        return False
+    memory_db.albums[aid]["titulo"] = titulo
+    return True
+
 
 def create_playlist(nome: str, id_dono: int):
     pid = memory_db.playlist_seq
@@ -125,6 +131,23 @@ def update_musica(mid: int, nome: str, genero: str, duracao_seg: int):
     musica.update({"nome": nome, "genero": genero, "duracao_seg": duracao_seg})
     return True
 
+def update_musica_metadata(mid: int, nome: str, genero: str):
+    musica = memory_db.musicas.get(mid)
+    if not musica:
+        return False
+    musica.update({"nome": nome, "genero": genero})
+    return True
+
+def delete_album(aid: int):
+    if aid not in memory_db.albums:
+        return False
+    # remove musicas ligadas ao álbum
+    ids_musicas = [mid for mid, m in memory_db.musicas.items() if m["id_album"] == aid]
+    for mid in ids_musicas:
+        delete_musica(mid)
+    del memory_db.albums[aid]
+    return True
+
 
 def delete_musica(mid: int):
     if mid not in memory_db.musicas:
@@ -132,6 +155,9 @@ def delete_musica(mid: int):
     del memory_db.musicas[mid]
     memory_db.musica_playlist = {(pid, mid_) for pid, mid_ in memory_db.musica_playlist if mid_ != mid}
     return True
+
+def get_user_by_id(uid: int):
+    return memory_db.users.get(uid)
 
 
 def add_musica_playlist(pid: int, mid: int):
@@ -167,3 +193,24 @@ def playlists_by_user(uid: int):
 
 def musicas_por_album(aid: int):
     return [m for m in memory_db.musicas.values() if m["id_album"] == aid]
+
+
+def musicas_da_playlist(pid: int):
+    mids = [mid for (p, mid) in memory_db.musica_playlist if p == pid]
+    return [memory_db.musicas[mid] for mid in mids if mid in memory_db.musicas]
+
+
+def renomear_playlist(pid: int, nome: str):
+    pl = memory_db.playlists.get(pid)
+    if not pl:
+        return False
+    pl["nome"] = nome
+    return True
+
+def deletar_playlist(pid: int):
+    if pid not in memory_db.playlists:
+        return False
+    # remove relações musica_playlist
+    memory_db.musica_playlist = {(p, mid) for (p, mid) in memory_db.musica_playlist if p != pid}
+    del memory_db.playlists[pid]
+    return True

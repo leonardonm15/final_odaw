@@ -41,7 +41,90 @@
 
   </div>
 
+  <!-- Modal de gerenciamento de álbum -->
+  <div id="albumModal" class="modal hidden" aria-hidden="true">
+    <div class="modal-content">
+      <header class="modal-header">
+        <div>
+          <p class="muted" style="margin:0;">Gerenciar álbum</p>
+          <h2 id="modalTitulo" style="margin:4px 0 0;"></h2>
+          <p id="modalSub" class="muted" style="margin:2px 0 0;font-size:0.9rem;"></p>
+        </div>
+        <div class="modal-actions">
+          <button id="btnExcluirAlbum" class="ghost-button danger" type="button">Excluir álbum</button>
+          <button id="modalClose" class="ghost-button" type="button">Fechar</button>
+        </div>
+      </header>
+
+      <section class="modal-body">
+        <div class="tab-buttons">
+          <button id="tabFaixas" class="tab-button is-active" type="button">Faixas</button>
+          <button id="tabUpload" class="tab-button" type="button">Upload</button>
+        </div>
+
+        <div id="abaFaixas" class="tab-panel is-active">
+          <div class="catalogo album-edit">
+            <div class="catalogo-header">
+              <div>
+                <h3>Nome do álbum</h3>
+                <p class="muted">Atualize o título do álbum.</p>
+              </div>
+            </div>
+            <div class="form-row">
+              <label for="albumNomeEdit">Título</label>
+              <input id="albumNomeEdit" type="text">
+            </div>
+            <div class="form-actions" style="justify-content:flex-end;">
+              <button id="btnSalvarAlbum" type="button" class="primary-button">Salvar nome</button>
+            </div>
+            <p id="albumMsg" class="msg" aria-live="polite" style="min-height:1.1em;"></p>
+          </div>
+
+          <div class="catalogo-header" style="margin-bottom:8px;">
+            <div>
+              <h3>Suas músicas</h3>
+              <p class="muted" style="margin:4px 0 0;">Edite ou remova apenas as faixas deste álbum.</p>
+            </div>
+          </div>
+          <div id="faixasEstado" class="muted" style="margin-bottom:8px;"></div>
+          <div id="faixasList" class="musicas-list"></div>
+        </div>
+
+        <div id="abaUpload" class="tab-panel">
+          <div class="catalogo">
+            <div class="catalogo-header">
+              <div>
+                <h3>Fazer upload</h3>
+                <p class="muted">Envie apenas suas próprias músicas.</p>
+              </div>
+            </div>
+            <form id="uploadForm" class="upload-form">
+              <div class="form-row">
+                <label for="musicaNome">Nome da faixa</label>
+                <input id="musicaNome" required>
+              </div>
+              <div class="form-row">
+                <label for="musicaGenero">Gênero</label>
+                <input id="musicaGenero" required>
+              </div>
+              <div class="form-row">
+                <label for="musicaArquivo">Arquivo de áudio</label>
+                <input id="musicaArquivo" type="file" accept="audio/*" required>
+              </div>
+              <p id="uploadMsg" class="msg" style="min-height:1.1em;"></p>
+              <div class="form-actions" style="justify-content:flex-end;">
+                <button type="submit" class="primary-button">Enviar</button>
+              </div>
+            </form>
+          </div>
+        </div>
+      </section>
+    </div>
+  </div>
+
   <script>
+    const API_BASE = window.location.origin || "http://localhost:8000";
+
     // lê usuário logado (aceita usuarioLogado e usuariologado)
     function getUsuarioLogado() {
       try {
@@ -104,9 +187,9 @@
         card.className = "album-card";
         card.style.cursor = "pointer";
 
-        // aqui abre a tela de músicas em modo "dono" (com upload)
+        // aqui abre o modal de gerenciamento do álbum
         card.addEventListener("click", () => {
-          window.location.href = `musicas.html?id_album=${album.id_album}`;
+          abrirModal(album);
         });
 
         card.innerHTML = `
@@ -134,6 +217,341 @@
       }
 
       renderAlbuns(user.id_usuario);
+      setupModal(user.id_usuario);
+    });
+
+    // ---------- Modal / gerenciamento de faixas ----------
+    const modal = document.getElementById("albumModal");
+    const modalClose = document.getElementById("modalClose");
+    const modalTitulo = document.getElementById("modalTitulo");
+    const modalSub = document.getElementById("modalSub");
+    const tabFaixas = document.getElementById("tabFaixas");
+    const tabUpload = document.getElementById("tabUpload");
+    const abaFaixas = document.getElementById("abaFaixas");
+    const abaUpload = document.getElementById("abaUpload");
+    const btnExcluirAlbum = document.getElementById("btnExcluirAlbum");
+    const albumNomeEdit = document.getElementById("albumNomeEdit");
+    const btnSalvarAlbum = document.getElementById("btnSalvarAlbum");
+    const albumMsg = document.getElementById("albumMsg");
+    const faixasList = document.getElementById("faixasList");
+    const faixasEstado = document.getElementById("faixasEstado");
+    const uploadForm = document.getElementById("uploadForm");
+    const uploadMsg = document.getElementById("uploadMsg");
+
+    let albumAtual = null;
+    let userIdAtual = null;
+    let faixas = [];
+
+    function setupModal(id_usuario) {
+      userIdAtual = id_usuario;
+    }
+
+    function trocarAba(aba) {
+      const isFaixas = aba === "faixas";
+      tabFaixas.classList.toggle("is-active", isFaixas);
+      tabUpload.classList.toggle("is-active", !isFaixas);
+      abaFaixas.classList.toggle("is-active", isFaixas);
+      abaUpload.classList.toggle("is-active", !isFaixas);
+    }
+
+    async function abrirModal(album) {
+      albumAtual = album;
+      modalTitulo.textContent = album.titulo || "Álbum";
+      modalSub.textContent = `${album.artista || "Artista"} · Ano ${album.ano || "—"}`;
+       albumNomeEdit.value = album.titulo || "";
+      albumMsg.textContent = "";
+      uploadMsg.textContent = "";
+      trocarAba("faixas");
+      modal.classList.remove("hidden");
+      modal.setAttribute("aria-hidden", "false");
+      await carregarFaixas(album.id_album);
+    }
+
+    function fecharModal() {
+      albumAtual = null;
+      faixas = [];
+      faixasList.innerHTML = "";
+      uploadForm.reset();
+      uploadMsg.textContent = "";
+      albumMsg.textContent = "";
+      modal.classList.add("hidden");
+      modal.setAttribute("aria-hidden", "true");
+    }
+
+    async function carregarFaixas(id_album) {
+      faixasEstado.textContent = "Carregando faixas…";
+      faixasList.innerHTML = "";
+      try {
+        const res = await fetch(`${API_BASE}/albuns/${id_album}/musicas`);
+        const data = await res.json();
+        if (!res.ok) {
+          faixasEstado.textContent = data.detail || "Erro ao carregar faixas.";
+          faixas = [];
+          return;
+        }
+        faixas = Array.isArray(data) ? data : [];
+        faixasEstado.textContent = `${faixas.length} faixa(s)`;
+        renderFaixas();
+      } catch (e) {
+        console.error("Erro ao buscar faixas:", e);
+        faixasEstado.textContent = "Erro de conexão ao buscar faixas.";
+        faixas = [];
+      }
+    }
+
+    function renderFaixas() {
+      faixasList.innerHTML = "";
+      if (!faixas.length) {
+        faixasList.innerHTML = `<p class="muted" style="text-align:center;margin:16px 0;">Nenhuma música neste álbum.</p>`;
+        return;
+      }
+
+      faixas.forEach((m) => {
+        const id = m.id_musica ?? m.id;
+        const nome = m.nome || m.titulo || m.nome_musica || `Música #${id || ""}`;
+        const genero = m.genero || "";
+        const item = document.createElement("div");
+        item.className = "faixa-card";
+        item.innerHTML = `
+          <div class="faixa-main">
+            <div class="form-row">
+              <label>Nome</label>
+              <input type="text" value="${nome}">
+            </div>
+            <div class="form-row">
+              <label>Gênero</label>
+              <input type="text" value="${genero}">
+            </div>
+          </div>
+          <div class="faixa-actions">
+            <button class="ghost-button btn-delete" type="button">Excluir</button>
+            <button class="primary-button btn-save" type="button">Salvar</button>
+          </div>
+        `;
+
+        const [inpNome, inpGenero] = item.querySelectorAll("input");
+
+        item.querySelector(".btn-save").addEventListener("click", async () => {
+          const nomeNovo = inpNome.value.trim();
+          const generoNovo = inpGenero.value.trim();
+          if (!nomeNovo || !generoNovo) {
+            alert("Preencha nome e gênero.");
+            return;
+          }
+          await salvarFaixa(id, nomeNovo, generoNovo);
+        });
+
+        item.querySelector(".btn-delete").addEventListener("click", async () => {
+          const ok = confirm("Deseja realmente excluir esta música?");
+          if (!ok) return;
+          await excluirFaixa(id);
+        });
+
+        faixasList.appendChild(item);
+      });
+    }
+
+    async function salvarFaixa(id_musica, nome, genero) {
+      try {
+        const formData = new FormData();
+        formData.append("nome", nome);
+        formData.append("genero", genero);
+
+        const res = await fetch(`${API_BASE}/musicas/${id_musica}/metadata`, {
+          method: "PUT",
+          body: formData,
+        });
+        const data = await res.json();
+        if (!res.ok) {
+          alert(data.detail || "Erro ao salvar música.");
+          return;
+        }
+        await carregarFaixas(albumAtual.id_album);
+      } catch (e) {
+        console.error("Erro ao salvar faixa:", e);
+        alert("Erro de conexão ao salvar música.");
+      }
+    }
+
+    async function excluirFaixa(id_musica) {
+      try {
+        const res = await fetch(`${API_BASE}/musicas/${id_musica}`, { method: "DELETE" });
+        if (!res.ok) {
+          const data = await res.json();
+          alert(data.detail || "Erro ao excluir música.");
+          return;
+        }
+        await carregarFaixas(albumAtual.id_album);
+      } catch (e) {
+        console.error("Erro ao excluir faixa:", e);
+        alert("Erro de conexão ao excluir música.");
+      }
+    }
+
+    function atualizarAlbumLocal(id_album, titulo) {
+      try {
+        const raw = localStorage.getItem("albunsUsuario");
+        if (!raw) return;
+        const lista = JSON.parse(raw);
+        const novaLista = lista.map((a) =>
+          String(a.id_album) === String(id_album) ? { ...a, titulo } : a
+        );
+        localStorage.setItem("albunsUsuario", JSON.stringify(novaLista));
+      } catch (e) {
+        console.error("Erro ao atualizar albunsUsuario local", e);
+      }
+    }
+
+    async function salvarNomeAlbum() {
+      if (!albumAtual) return;
+      const novoTitulo = albumNomeEdit.value.trim();
+      if (!novoTitulo) {
+        albumMsg.style.color = "#ffb3b3";
+        albumMsg.textContent = "Informe um título.";
+        return;
+      }
+      try {
+        const formData = new FormData();
+        formData.append("titulo", novoTitulo);
+        const res = await fetch(`${API_BASE}/albuns/${albumAtual.id_album}`, {
+          method: "PUT",
+          body: formData,
+        });
+        const data = await res.json();
+        if (!res.ok) {
+          albumMsg.style.color = "#ffb3b3";
+          albumMsg.textContent = data.detail || "Erro ao salvar.";
+          return;
+        }
+        albumMsg.style.color = "#9ae6b4";
+        albumMsg.textContent = "Título atualizado.";
+        albumAtual.titulo = novoTitulo;
+        modalTitulo.textContent = novoTitulo;
+        atualizarAlbumLocal(albumAtual.id_album, novoTitulo);
+        renderAlbuns(userIdAtual);
+      } catch (e) {
+        console.error("Erro ao renomear álbum:", e);
+        albumMsg.style.color = "#ffb3b3";
+        albumMsg.textContent = "Erro de conexão.";
+      }
+    }
+
+    function removerAlbumLocal(id_album) {
+      try {
+        const raw = localStorage.getItem("albunsUsuario");
+        if (!raw) return;
+        const lista = JSON.parse(raw);
+        const novaLista = lista.filter((a) => String(a.id_album) !== String(id_album));
+        localStorage.setItem("albunsUsuario", JSON.stringify(novaLista));
+      } catch (e) {
+        console.error("Erro ao remover álbum do localStorage", e);
+      }
+    }
+
+    async function excluirAlbumAtual() {
+      if (!albumAtual) return;
+      const ok = confirm("Deseja realmente excluir este álbum? As músicas dele também serão removidas.");
+      if (!ok) return;
+      try {
+        const res = await fetch(`${API_BASE}/albuns/${albumAtual.id_album}`, { method: "DELETE" });
+        const data = await res.json();
+        if (!res.ok) {
+          alert(data.detail || "Erro ao excluir álbum.");
+          return;
+        }
+        removerAlbumLocal(albumAtual.id_album);
+        renderAlbuns(userIdAtual);
+        fecharModal();
+      } catch (e) {
+        console.error("Erro ao excluir álbum:", e);
+        alert("Erro de conexão ao excluir álbum.");
+      }
+    }
+
+    uploadForm.addEventListener("submit", async (ev) => {
+      ev.preventDefault();
+      uploadMsg.style.color = "";
+      uploadMsg.textContent = "";
+
+      if (!albumAtual || !userIdAtual) {
+        uploadMsg.style.color = "#ffb3b3";
+        uploadMsg.textContent = "Álbum ou usuário não identificado.";
+        return;
+      }
+
+      const nome = document.getElementById("musicaNome").value.trim();
+      const genero = document.getElementById("musicaGenero").value.trim();
+      const arquivo = document.getElementById("musicaArquivo").files[0];
+
+      if (!nome || !genero || !arquivo) {
+        uploadMsg.style.color = "#ffb3b3";
+        uploadMsg.textContent = "Preencha todos os campos.";
+        return;
+      }
+
+      async function getFileDuration(file) {
+        return new Promise((resolve, reject) => {
+          const audio = document.createElement("audio");
+          audio.preload = "metadata";
+          audio.src = URL.createObjectURL(file);
+          audio.onloadedmetadata = () => {
+            const dur = audio.duration;
+            URL.revokeObjectURL(audio.src);
+            resolve(dur);
+          };
+          audio.onerror = (err) => {
+            URL.revokeObjectURL(audio.src);
+            reject(err);
+          };
+        });
+      }
+
+      let duracaoSeg = 0;
+      try {
+        const duracao = await getFileDuration(arquivo);
+        duracaoSeg = Number.isFinite(duracao) ? Math.round(duracao) : 0;
+      } catch (e) {
+        console.warn("Não foi possível ler duração do arquivo, enviando 0.", e);
+      }
+
+      const formData = new FormData();
+      formData.append("nome", nome);
+      formData.append("genero", genero);
+      formData.append("duracao_seg", String(duracaoSeg));
+      formData.append("id_album", String(albumAtual.id_album));
+      formData.append("id_usuario", String(userIdAtual));
+      formData.append("arquivo", arquivo);
+
+      try {
+        const res = await fetch(`${API_BASE}/musicas/criar`, {
+          method: "POST",
+          body: formData,
+        });
+        const data = await res.json();
+        if (!res.ok) {
+          uploadMsg.style.color = "#ffb3b3";
+          uploadMsg.textContent = data.detail || "Erro ao enviar música.";
+          return;
+        }
+        uploadMsg.style.color = "#9ae6b4";
+        uploadMsg.textContent = "Música enviada com sucesso.";
+        uploadForm.reset();
+        await carregarFaixas(albumAtual.id_album);
+        trocarAba("faixas");
+      } catch (e) {
+        console.error("Erro ao enviar música:", e);
+        uploadMsg.style.color = "#ffb3b3";
+        uploadMsg.textContent = "Erro de conexão ao enviar música.";
+      }
+    });
+
+    modalClose.addEventListener("click", fecharModal);
+    tabFaixas.addEventListener("click", () => trocarAba("faixas"));
+    tabUpload.addEventListener("click", () => trocarAba("upload"));
+    btnSalvarAlbum.addEventListener("click", salvarNomeAlbum);
+    btnExcluirAlbum.addEventListener("click", excluirAlbumAtual);
+    modal.addEventListener("click", (ev) => {
+      if (ev.target === modal) fecharModal();
     });
   </script>
 </body>

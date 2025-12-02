@@ -50,8 +50,15 @@
 
         if(res.ok){
           /* document.getElementById('message').textContent = "Login realizado!"; */
-          localStorage.setItem("usuarioLogado", JSON.stringify(data));
-          console.log("Login ok, usuário salvo:", data);
+          // Normaliza id para evitar chaves diferentes
+          const user = { ...data, id_usuario: data.id_usuario ?? data.id };
+          // Salva em múltiplas chaves/origens para outras telas recuperarem
+          localStorage.setItem("usuarioLogado", JSON.stringify(user));
+          localStorage.setItem("usuariologado", JSON.stringify(user));
+          localStorage.setItem("app_user", JSON.stringify(user));
+          sessionStorage.setItem("usuarioLogado", JSON.stringify(user));
+          sessionStorage.setItem("app_user", JSON.stringify(user));
+          console.log("Login ok, usuário salvo:", user);
           window.location.replace("tela_inicial.html");
         } else {
           document.getElementById('message').textContent = data.detail || "Erro no login.";

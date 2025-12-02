@@ -1,11 +1,17 @@
 from fastapi import FastAPI, File, UploadFile, Form, HTTPException
 from fastapi.responses import FileResponse
+from typing import Optional
 from schemas import UserCreate, UserOut, Login
 from auth import login_user
 from crud.users import create_user
 from crud.musicas import listar_musicas, listar_por_genero, listar_por_artista
-from crud.playlists import criar_playlist, adicionar_musica
-from crud.albuns import criar_album
+from crud.playlists import (
+    criar_playlist,
+    adicionar_musica,
+    listar_musicas_da_playlist,
+    atualizar_nome_playlist,
+)
+from crud.albuns import criar_album, atualizar_titulo_album
 import os
 from pathlib import Path
 from database import (
@@ -13,11 +19,15 @@ from database import (
     USE_MEMORY_DB,
     add_musica,
     update_musica,
+    update_musica_metadata,
     delete_musica,
+    get_user_by_id,
+    delete_album,
     add_musica_playlist,
     remove_musica_playlist,
     playlists_by_user,
     musicas_por_album,
+    deletar_playlist,
 )
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
@@ -86,14 +96,44 @@ def login(login: Login):
         raise HTTPException(status_code=401, detail="Credenciais inválidas")
     return user
 
+@app.get("/usuarios/{id_usuario}")
+def usuario_por_id(id_usuario: int):
+    if USE_MEMORY_DB:
+        user = get_user_by_id(id_usuario)
+        if not user:
+            raise HTTPException(status_code=404, detail="Usuário não encontrado.")
+        return {"id_usuario": user["id_usuario"], "nome": user["nome"], "email": user["email"]}
+
+    conn = get_conn()
+    cur = conn.cursor()
+    try:
+        cur.execute(
+            "SELECT id_usuario, nome, email FROM usuarios WHERE id_usuario=%s",
+            (id_usuario,),
+        )
+        row = cur.fetchone()
+    finally:
+        cur.close()
+        conn.close()
+
+    if not row:
+        raise HTTPException(status_code=404, detail="Usuário não encontrado.")
+
+    # row pode ser dict ou tuple
+    return {
+        "id_usuario": row["id_usuario"] if isinstance(row, dict) else row[0],
+        "nome": row["nome"] if isinstance(row, dict) else row[1],
+        "email": row["email"] if isinstance(row, dict) else row[2],
+    }
+
 
 # ============================================================
 # 🟢 RF02 — Catálogo (Listagem e Filtros)
 # ============================================================
 
 @app.get("/musicas")
-def todas_musicas():
-    return listar_musicas()
+def todas_musicas(nome: Optional[str] = None, id_album: Optional[int] = None):
+    return listar_musicas(nome=nome, id_album=id_album)
 
 @app.get("/musicas/genero/{genero}")
 def por_genero(genero: str):
@@ -116,7 +156,7 @@ async def criar_musica(
     duracao_seg: int = Form(...),
     id_album: int = Form(...),
     id_usuario: int = Form(...),
-    id_playlist: int = Form(...),
+    id_playlist: Optional[int] = Form(None),
     arquivo: UploadFile = File(...)
 ):
     if not arquivo.content_type.startswith("audio/"):
@@ -125,7 +165,8 @@ async def criar_musica(
     if USE_MEMORY_DB:
         musica = add_musica(nome, genero, int(duracao_seg), int(id_album), int(id_usuario))
         id_musica = musica["id_musica"]
-        add_musica_playlist(int(id_playlist), id_musica)
+        if id_playlist is not None:
+            add_musica_playlist(int(id_playlist), id_musica)
     else:
         conn = get_conn()
         cur = conn.cursor()
@@ -137,13 +178,20 @@ async def criar_musica(
             RETURNING id_musica;
         """, (nome, genero, duracao_seg, id_album, id_usuario))
 
-        id_musica = cur.fetchone()[0]
+        row = cur.fetchone()
+        if not row:
+            cur.close()
+            conn.close()
+            raise HTTPException(status_code=500, detail="Falha ao criar música.")
+        # RealDictCursor retorna dict; tuple fallback se usar cursor default
+        id_musica = row["id_musica"] if isinstance(row, dict) else row[0]
 
-        # 2 — Vincular playlist
-        cur.execute("""
-            INSERT INTO musica_playlist (id_playlist, id_musica)
-            VALUES (%s, %s)
-        """, (id_playlist, id_musica))
+        # 2 — Vincular playlist (opcional)
+        if id_playlist is not None:
+            cur.execute("""
+                INSERT INTO musica_playlist (id_playlist, id_musica)
+                VALUES (%s, %s)
+            """, (id_playlist, id_musica))
 
         conn.commit()
         cur.close()
@@ -199,6 +247,34 @@ def editar_musica(id_musica: int, nome: str = Form(...), genero: str = Form(...)
     if not updated:
         raise HTTPException(status_code=404, detail="Música não encontrada.")
 
+    return {"message": "Música atualizada."}
+
+# Editar nome/gênero (sem exigir duração)
+@app.put("/musicas/{id_musica}/metadata")
+def editar_musica_metadata(id_musica: int, nome: str = Form(...), genero: str = Form(...)):
+    if USE_MEMORY_DB:
+        ok = update_musica_metadata(id_musica, nome, genero)
+        if not ok:
+            raise HTTPException(status_code=404, detail="Música não encontrada.")
+        return {"message": "Música atualizada."}
+
+    conn = get_conn()
+    cur = conn.cursor()
+    cur.execute(
+        """
+        UPDATE musicas
+        SET nome=%s, genero=%s
+        WHERE id_musica=%s
+        RETURNING id_musica;
+        """,
+        (nome, genero, id_musica),
+    )
+    updated = cur.fetchone()
+    conn.commit()
+    cur.close()
+    conn.close()
+    if not updated:
+        raise HTTPException(status_code=404, detail="Música não encontrada.")
     return {"message": "Música atualizada."}
 
 
@@ -273,6 +349,26 @@ def remover_musica_playlist(id_playlist: int, id_musica: int):
 
     return {"message": "Música removida da playlist."}
 
+@app.delete("/playlists/{id_playlist}")
+def excluir_playlist(id_playlist: int):
+    if USE_MEMORY_DB:
+        ok = deletar_playlist(id_playlist)
+        if not ok:
+            raise HTTPException(status_code=404, detail="Playlist não encontrada.")
+    else:
+        conn = get_conn()
+        cur = conn.cursor()
+        # apaga relações e a playlist
+        cur.execute("DELETE FROM musica_playlist WHERE id_playlist=%s;", (id_playlist,))
+        cur.execute("DELETE FROM playlists WHERE id_playlist=%s RETURNING id_playlist;", (id_playlist,))
+        row = cur.fetchone()
+        conn.commit()
+        cur.close()
+        conn.close()
+        if not row:
+            raise HTTPException(status_code=404, detail="Playlist não encontrada.")
+    return {"message": "Playlist deletada."}
+
 
 @app.get("/usuarios/{id_usuario}/playlists")
 def playlists_usuario(id_usuario: int):
@@ -288,6 +384,19 @@ def playlists_usuario(id_usuario: int):
     cur.close()
     conn.close()
     return [dict(r) for r in rows]
+
+
+@app.get("/playlists/{id_playlist}/musicas")
+def musicas_da_playlist_route(id_playlist: int):
+    return listar_musicas_da_playlist(id_playlist)
+
+
+@app.put("/playlists/{id_playlist}")
+def renomear_playlist_route(id_playlist: int, nome: str = Form(...)):
+    ok = atualizar_nome_playlist(id_playlist, nome)
+    if not ok:
+        raise HTTPException(status_code=404, detail="Playlist não encontrada.")
+    return {"message": "Playlist atualizada.", "id_playlist": id_playlist, "nome": nome}
 
 
 # ============================================================
@@ -313,6 +422,44 @@ def musicas_do_album(id_album: int):
     conn.close()
 
     return [dict(r) for r in rows]
+
+
+@app.delete("/albuns/{id_album}")
+def excluir_album(id_album: int):
+    removed_files = []
+    if USE_MEMORY_DB:
+        ok = delete_album(id_album)
+        if not ok:
+            raise HTTPException(status_code=404, detail="Álbum não encontrado.")
+    else:
+        conn = get_conn()
+        cur = conn.cursor()
+        # pega ids das músicas para remover arquivos depois
+        cur.execute("SELECT id_musica FROM musicas WHERE id_album=%s;", (id_album,))
+        ids = [r[0] if not isinstance(r, dict) else r["id_musica"] for r in cur.fetchall()]
+        cur.execute("DELETE FROM albuns WHERE id_album=%s RETURNING id_album;", (id_album,))
+        row = cur.fetchone()
+        conn.commit()
+        cur.close()
+        conn.close()
+        if not row:
+            raise HTTPException(status_code=404, detail="Álbum não encontrado.")
+        removed_files = ids
+
+    # remove arquivos físicos das músicas do álbum (se existirem)
+    for mid in removed_files:
+        for f in SONGS_DIR.glob(f"{mid}.*"):
+            f.unlink(missing_ok=True)
+
+    return {"message": "Álbum deletado."}
+
+
+@app.put("/albuns/{id_album}")
+def renomear_album_route(id_album: int, titulo: str = Form(...)):
+    ok = atualizar_titulo_album(id_album, titulo)
+    if not ok:
+        raise HTTPException(status_code=404, detail="Álbum não encontrado.")
+    return {"message": "Álbum atualizado.", "id_album": id_album, "titulo": titulo}
 
 
 # Upload da capa

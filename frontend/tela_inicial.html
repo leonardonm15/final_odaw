@@ -36,20 +36,70 @@
       </svg>
     </div>
 
-    <!-- header / link de perfil -->
+    <!-- header / usuário logado -->
     <header class="topbar" role="banner">
-        <a href="#" class="profile-link">Meu perfil</a>
+      <div class="profile-info">
+        <span id="userName" class="user-name"></span>
+        <button id="logoutBtn" class="ghost-button" type="button">Sair</button>
+      </div>
     </header>
 
     <!-- conteúdo central: menu com 3 itens (substitua os href conforme suas páginas) -->
     <section class="center" role="region" aria-label="Menu principal">
       <nav class="menu" role="navigation" aria-label="Opções principais">
-        <a href="explorar_musicas.html" class="menu-item">Explorar músicas</a>
+        <a href="explorar_musicas.html" class="menu-item">Explorar álbuns</a>
         <a href="minhas_musicas.html" class="menu-item">Minhas músicas</a>
         <a href="playlists.html" class="menu-item">Minhas playlists</a>
       </nav>
     </section>
 
   </div>
+
+  <script>
+    function getUsuarioLogado() {
+      try {
+        const raw =
+          localStorage.getItem("usuarioLogado") ||
+          localStorage.getItem("usuariologado") ||
+          localStorage.getItem("app_user") ||
+          sessionStorage.getItem("usuarioLogado") ||
+          sessionStorage.getItem("app_user");
+        if (!raw) return null;
+        return JSON.parse(raw);
+      } catch (e) {
+        console.error("Erro ao ler usuário logado", e);
+        return null;
+      }
+    }
+
+    function limparSessao() {
+      localStorage.removeItem("usuarioLogado");
+      localStorage.removeItem("usuariologado");
+      localStorage.removeItem("app_user");
+      sessionStorage.removeItem("usuarioLogado");
+      sessionStorage.removeItem("app_user");
+    }
+
+    document.addEventListener("DOMContentLoaded", () => {
+      const user = getUsuarioLogado();
+      const userNameEl = document.getElementById("userName");
+      if (!user) {
+        userNameEl.textContent = "Não autenticado";
+        window.location.href = "login.html";
+        return;
+      }
+      userNameEl.textContent =
+        user.nome ||
+        user.name ||
+        user.username ||
+        user.email ||
+        "Usuário";
+
+      document.getElementById("logoutBtn").addEventListener("click", () => {
+        limparSessao();
+        window.location.href = "login.html";
+      });
+    });
+  </script>
 </body>
 </html>

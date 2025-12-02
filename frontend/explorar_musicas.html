@@ -39,6 +39,8 @@
   </div>
 
   <script>
+    const API_BASE = window.location.origin || "http://localhost:8000";
+
     // Lê todos os álbuns salvos (de todos os usuários) em albunsUsuario
     function carregarTodosAlbuns() {
       try {
@@ -82,31 +84,54 @@
 
       empty.style.display = "none";
 
-      albuns.forEach((album) => {
-        const card = document.createElement("article");
-        card.className = "album-card";
-        card.style.cursor = "pointer";
+      // busca nomes dos donos (se possível)
+      const ids = Array.from(new Set(albuns.map((a) => a.id_usuario))).filter(Boolean);
+      const nomePorId = new Map();
 
-        card.addEventListener("click", () => {
-          // abre em modo somente leitura: sem upload na tela de músicas
-          window.location.href = `musicas.html?id_album=${album.id_album}&readonly=1`;
-        });
+      Promise.all(
+        ids.map(async (uid) => {
+          try {
+            const res = await fetch(`${API_BASE}/usuarios/${uid}`);
+            if (!res.ok) throw new Error("not ok");
+            const data = await res.json();
+            nomePorId.set(uid, data.nome || data.email || `Usuário #${uid}`);
+          } catch (e) {
+            nomePorId.set(uid, `Usuário #${uid}`);
+          }
+        })
+      ).finally(() => {
+        albuns.forEach((album) => {
+          const card = document.createElement("article");
+          card.className = "album-card";
+          card.style.cursor = "pointer";
 
-        card.innerHTML = `
-          <div class="card-cover">
-            <div class="cover-stack">
-              <div class="cover-layer back"></div>
-              <div class="cover-layer front"></div>
+          card.addEventListener("click", () => {
+            // abre em modo somente leitura: sem upload na tela de músicas
+            window.location.href = `musicas.html?id_album=${album.id_album}&readonly=1`;
+          });
+
+          const nomeDono =
+            nomePorId.get(album.id_usuario) ||
+            album.nome_dono ||
+            album.artista ||
+            `Usuário #${album.id_usuario}`;
+
+          card.innerHTML = `
+            <div class="card-cover">
+              <div class="cover-stack">
+                <div class="cover-layer back"></div>
+                <div class="cover-layer front"></div>
+              </div>
             </div>
-          </div>
-          <h2 class="album-title">${album.titulo}</h2>
-          <p class="album-artist">${album.artista}</p>
-          <p class="album-meta">
-            Ano: ${album.ano} · Dono: usuário #${album.id_usuario}
-          </p>
-        `;
+            <h2 class="album-title">${album.titulo}</h2>
+            <p class="album-artist">${album.artista}</p>
+            <p class="album-meta">
+              Ano: ${album.ano} · Dono: ${nomeDono}
+            </p>
+          `;
 
-        grid.appendChild(card);
+          grid.appendChild(card);
+        });
       });
     }
 

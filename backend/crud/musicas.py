@@ -8,18 +8,39 @@ from database import (
 )
 
 
-def listar_musicas():
+def listar_musicas(nome: str | None = None, id_album: int | None = None):
     if USE_MEMORY_DB:
-        return mem_listar()
+        rows = mem_listar()
+        if nome:
+            rows = [
+                r for r in rows
+                if nome.lower() in (r.get("nome") or "").lower()
+            ]
+        if id_album is not None:
+            rows = [r for r in rows if r.get("id_album") == id_album]
+        return rows
 
     conn = get_conn()
     cur = conn.cursor()
-    cur.execute("SELECT * FROM musicas;")
-    rows = cur.fetchall()
-    cur.close()
-    conn.close()
+    try:
+        clauses = []
+        params = []
+        if nome:
+            clauses.append("LOWER(nome) LIKE %s")
+            params.append(f"%{nome.lower()}%")
+        if id_album is not None:
+            clauses.append("id_album = %s")
+            params.append(id_album)
 
-    return rows_to_dicts(rows)
+        sql = "SELECT * FROM musicas"
+        if clauses:
+            sql += " WHERE " + " AND ".join(clauses)
+        cur.execute(sql, tuple(params))
+        rows = cur.fetchall()
+        return rows_to_dicts(rows)
+    finally:
+        cur.close()
+        conn.close()
 
 
 def listar_por_genero(genero):

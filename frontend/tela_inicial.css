@@ -70,25 +70,44 @@ body{background:var(--bg);color:var(--muted)}
   pointer-events:none;     /* itens dentro sobrescrevem para clique quando necessário */
 }
 
-.profile-link{
+.profile-info{
   pointer-events:auto;
-  text-decoration:none;
-  color:var(--white-90);
-  font-weight:700;
-  font-size:1.2rem;       /* aumenta o tamanho do texto do link */
-  padding-bottom:0.4rem;
-  position:relative;
-  display:inline-block;
+  display:flex;
+  align-items:center;
+  gap:12px;
+  background:rgba(255,255,255,0.04);
+  padding:0.6rem 0.95rem;
+  border-radius:999px;
+  border:1px solid rgba(255,255,255,0.1);
+  box-shadow:0 10px 30px rgba(0,0,0,0.4);
 }
 
-.profile-link::after{
-  content:"";
-  display:block;
-  width:105%;               /* ligeiro aumento da linha */
-  height:4px;              /* linha mais grossa */
-  background:var(--blue);
-  margin-top:0.6rem;
-  border-radius:2px;
+.user-name{
+  color:var(--white-90);
+  font-weight:700;
+  font-size:1.05rem;
+  max-width:220px;
+  overflow:hidden;
+  text-overflow:ellipsis;
+  white-space:nowrap;
+}
+
+.ghost-button{
+  border-radius:999px;
+  padding:0.5rem 1rem;
+  font-size:0.95rem;
+  font-weight:600;
+  cursor:pointer;
+  border:1px solid rgba(255,255,255,0.25);
+  background:transparent;
+  color:var(--white-90);
+  transition:background .16s ease, transform .16s ease, box-shadow .16s ease;
+}
+
+.ghost-button:hover{
+  background:rgba(255,255,255,0.08);
+  box-shadow:0 8px 22px rgba(0,0,0,0.35);
+  transform:translateY(-1px);
 }
 
 
@@ -154,8 +173,7 @@ body{background:var(--bg);color:var(--muted)}
 }
 
 /* Acessibilidade: foco visível nos links */
-.menu-item:focus,
-.profile-link:focus{
+.menu-item:focus{
   outline:3px solid rgba(95,176,230,0.14);
   outline-offset:4px;
   border-radius:4px;
@@ -165,7 +183,6 @@ body{background:var(--bg);color:var(--muted)}
 @media (max-width:880px){
   .arc.left-bottom{ left:-30vmin; bottom:-30vmin; width:140vmin; height:140vmin; transform: rotate(-8deg); }
   .center{ min-height:480px; padding:1.25rem; }
-  .profile-link::after{ width:46%; }
   .menu-item{ font-size:1rem; }
   .asterisk{ width:56px; height:56px; }
 }
@@ -173,7 +190,6 @@ body{background:var(--bg);color:var(--muted)}
   .stage{ padding:1rem; }
   .asterisk.left-top{ left:1rem; top:1rem; }
   .asterisk.right-bottom{ right:1rem; bottom:1rem; }
-  .profile-link{ font-size:0.95rem; }
   .menu{ gap:1.6rem; }
   .menu-item{ font-size:0.98rem; }
 }
