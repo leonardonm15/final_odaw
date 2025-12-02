@@ -1,0 +1,140 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>ODAW - Minhas músicas</title>
+  <link rel="stylesheet" href="minhas_musicas.css">
+</head>
+<body>
+  <div class="page">
+
+    <header class="header">
+      <div class="heading">
+        <h1>Minhas músicas</h1>
+        <span class="heading-underline"></span>
+      </div>
+
+      <div class="header-actions">
+        <button type="button"
+                class="ghost-button"
+                onclick="window.location.href='tela_inicial.html'">
+          Voltar
+        </button>
+        <button type="button"
+                class="primary-button"
+                onclick="window.location.href='album.html'">
+          + Criar álbum
+        </button>
+      </div>
+    </header>
+
+    <main>
+      <section class="grid-section">
+        <p id="emptyState" class="empty-state">
+          Você ainda não criou nenhum álbum.
+        </p>
+
+        <div id="albunsGrid" class="album-grid" aria-live="polite"></div>
+      </section>
+    </main>
+
+  </div>
+
+  <script>
+    // lê usuário logado (aceita usuarioLogado e usuariologado)
+    function getUsuarioLogado() {
+      try {
+        const raw =
+          localStorage.getItem("usuarioLogado") ||
+          localStorage.getItem("usuariologado");
+
+        if (!raw) {
+          console.warn("usuarioLogado/usuariologado não encontrado no localStorage");
+          return null;
+        }
+
+        const user = JSON.parse(raw);
+        console.log("Usuário logado em minhas_musicas:", user);
+        return user;
+      } catch (e) {
+        console.error("Erro ao ler usuarioLogado/usuariologado", e);
+        return null;
+      }
+    }
+
+    // busca apenas os álbuns do usuário logado na chave albunsUsuario
+    function carregarAlbunsSalvos(id_usuario) {
+      try {
+        const raw = localStorage.getItem("albunsUsuario");
+        if (!raw) {
+          console.log("Nenhum albunsUsuario encontrado ainda.");
+          return [];
+        }
+
+        const lista = JSON.parse(raw);
+        const filtrados = lista.filter(
+          (album) => String(album.id_usuario) === String(id_usuario)
+        );
+
+        console.log("Álbuns carregados para usuário", id_usuario, filtrados);
+        return filtrados;
+      } catch (e) {
+        console.error("Erro ao ler albunsUsuario", e);
+        return [];
+      }
+    }
+
+    function renderAlbuns(id_usuario) {
+      const albuns = carregarAlbunsSalvos(id_usuario);
+      const grid = document.getElementById("albunsGrid");
+      const empty = document.getElementById("emptyState");
+
+      grid.innerHTML = "";
+
+      if (!albuns.length) {
+        empty.style.display = "block";
+        return;
+      }
+
+      empty.style.display = "none";
+
+      albuns.forEach((album) => {
+        const card = document.createElement("article");
+        card.className = "album-card";
+        card.style.cursor = "pointer";
+
+        // aqui abre a tela de músicas em modo "dono" (com upload)
+        card.addEventListener("click", () => {
+          window.location.href = `musicas.html?id_album=${album.id_album}`;
+        });
+
+        card.innerHTML = `
+          <div class="card-cover">
+            <div class="cover-stack">
+              <div class="cover-layer back"></div>
+              <div class="cover-layer front"></div>
+            </div>
+          </div>
+          <h2 class="album-title">${album.titulo}</h2>
+          <p class="album-artist">${album.artista}</p>
+          <p class="album-meta">Ano: ${album.ano}</p>
+        `;
+
+        grid.appendChild(card);
+      });
+    }
+
+    document.addEventListener("DOMContentLoaded", () => {
+      const user = getUsuarioLogado();
+      if (!user) {
+        alert("Você precisa estar logado para ver suas músicas.");
+        window.location.href = "login.html";
+        return;
+      }
+
+      renderAlbuns(user.id_usuario);
+    });
+  </script>
+</body>
+</html>

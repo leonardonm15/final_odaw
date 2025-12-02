@@ -1,0 +1,150 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Criar álbum - ODAW</title>
+  <link rel="stylesheet" href="album.css">
+</head>
+<body>
+  <div class="wrap">
+
+    <header class="header">
+      <h1>Novo álbum</h1>
+
+      <button type="button"
+              class="ghost-button"
+              onclick="window.location.href='minhas_musicas.html'">
+        Voltar
+      </button>
+    </header>
+
+    <main>
+      <section class="card">
+        <form id="albumForm">
+          <div class="field">
+            <label for="titulo">Nome do álbum</label>
+            <input id="titulo" name="titulo" required />
+          </div>
+
+          <div class="field">
+            <label for="artista">Artista / Banda</label>
+            <input id="artista" name="artista" required />
+          </div>
+
+          <div class="field">
+            <label for="ano">Ano de lançamento</label>
+            <input id="ano" name="ano" type="number" min="1900" max="2100" required />
+          </div>
+
+          <p id="msg" class="msg"></p>
+
+          <div class="actions">
+            <button type="submit" class="primary-button">Salvar álbum</button>
+          </div>
+        </form>
+      </section>
+    </main>
+
+  </div>
+
+  <script>
+    const API_BASE = "http://localhost:8000";
+
+    // --- CARREGAR USUÁRIO LOGADO ----
+    function getUsuarioLogado() {
+      try {
+        const raw = localStorage.getItem("usuarioLogado");
+        if (!raw) {
+          console.warn("usuarioLogado não encontrado.");
+          return null;
+        }
+        return JSON.parse(raw);
+      } catch (e) {
+        console.error("Erro ao ler usuarioLogado:", e);
+        return null;
+      }
+    }
+
+    // --- SALVAR ÁLBUM ORGANIZADO POR USUÁRIO ---
+    function salvarAlbumLocal(album) {
+        let lista = [];
+
+        try {
+        const raw = localStorage.getItem("albunsUsuario");
+        lista = raw ? JSON.parse(raw) : [];
+    } catch (e) {
+        console.error("Erro ao ler albunsUsuario", e);
+    }
+
+    lista.push(album);
+
+    localStorage.setItem("albunsUsuario", JSON.stringify(lista));
+    }
+
+
+    // --- SUBMIT DO FORM ---
+    document.getElementById("albumForm").addEventListener("submit", async (ev) => {
+      ev.preventDefault();
+      const msg = document.getElementById("msg");
+      msg.textContent = "";
+
+      const titulo  = document.getElementById("titulo").value.trim();
+      const artista = document.getElementById("artista").value.trim();
+      const ano     = document.getElementById("ano").value.trim();
+
+      if (!titulo || !artista || !ano) {
+        msg.textContent = "Preencha todos os campos.";
+        return;
+      }
+
+      const user = getUsuarioLogado();
+      if (!user) {
+        alert("Você precisa estar logado para criar um álbum.");
+        window.location.href = "login.html";
+        return;
+      }
+
+      const id_usuario = user.id_usuario;
+
+      try {
+        // O backend recebe tudo via query params
+        const params = new URLSearchParams({
+          titulo,
+          ano: String(ano),
+          id_usuario: String(id_usuario)
+        });
+
+        const res = await fetch(`${API_BASE}/albuns?${params.toString()}`, {
+          method: "POST"
+        });
+
+        const data = await res.json();
+
+        if (!res.ok) {
+          msg.textContent = data.detail || "Erro ao criar álbum.";
+          return;
+        }
+
+        // O backend só retorna { id_album } — completamos com nossos dados
+        const albumCompleto = {
+          id_album: data.id_album,
+          titulo,
+          artista,
+          ano,
+          id_usuario
+        };
+
+        salvarAlbumLocal(albumCompleto);
+
+        // redirect
+        window.location.href = "minhas_musicas.html";
+
+      } catch (e) {
+        console.error(e);
+        msg.textContent = "Erro de conexão com o servidor.";
+      }
+    });
+  </script>
+</body>
+</html>

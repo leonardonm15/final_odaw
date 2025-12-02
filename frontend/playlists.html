@@ -1,0 +1,156 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>ODAW - Minhas playlists</title>
+  <link rel="stylesheet" href="playlists.css">
+</head>
+<body>
+  <div class="page">
+
+    <!-- cabeçalho -->
+    <header class="header">
+      <div class="heading">
+        <h1>Minhas playlists</h1>
+        <span class="heading-underline"></span>
+      </div>
+
+      <button type="button"
+              class="ghost-button"
+              onclick="window.location.href='tela_inicial.html'">
+        Voltar para início
+      </button>
+    </header>
+
+    <main>
+      <!-- botão para abrir o formulário -->
+      <section class="toolbar">
+        <button type="button" id="openFormButton" class="primary-button">
+          + Adicionar playlist
+        </button>
+      </section>
+
+      <!-- formulário de nova playlist -->
+      <section id="formWrapper" class="playlist-form is-hidden" aria-hidden="true">
+        <h2>Nova playlist</h2>
+        <form id="playlistForm">
+          <div class="form-row">
+            <label for="nomeMusica">Nome da música</label>
+            <input id="nomeMusica" name="nomeMusica" type="text" required>
+          </div>
+
+          <div class="form-row">
+            <label for="artista">Nome da banda / artista</label>
+            <input id="artista" name="artista" type="text" required>
+          </div>
+
+          <div class="form-row">
+            <label for="ano">Ano de lançamento</label>
+            <input id="ano" name="ano" type="number" min="1900" max="2100" required>
+          </div>
+
+          <div class="form-actions">
+            <button type="submit" class="primary-button">Salvar playlist</button>
+            <button type="button" id="cancelFormButton" class="ghost-button">Cancelar</button>
+          </div>
+        </form>
+      </section>
+
+      <!-- grade de playlists -->
+      <section class="grid-section">
+        <p id="emptyState" class="empty-state">
+          Você ainda não adicionou nenhuma playlist.
+        </p>
+
+        <div id="playlistsGrid" class="playlist-grid" aria-live="polite"></div>
+      </section>
+    </main>
+  </div>
+
+  <script>
+    const openFormButton  = document.getElementById('openFormButton');
+    const cancelFormButton = document.getElementById('cancelFormButton');
+    const formWrapper     = document.getElementById('formWrapper');
+    const playlistForm    = document.getElementById('playlistForm');
+    const playlistsGrid   = document.getElementById('playlistsGrid');
+    const emptyState      = document.getElementById('emptyState');
+
+    let playlists = [];
+
+    function toggleForm(show) {
+      if (show) {
+        formWrapper.classList.remove('is-hidden');
+        formWrapper.setAttribute('aria-hidden', 'false');
+        document.getElementById('nomeMusica').focus();
+      } else {
+        formWrapper.classList.add('is-hidden');
+        formWrapper.setAttribute('aria-hidden', 'true');
+        playlistForm.reset();
+      }
+    }
+
+    function renderPlaylists() {
+      playlistsGrid.innerHTML = '';
+
+      if (playlists.length === 0) {
+        emptyState.style.display = 'block';
+        return;
+      }
+
+      emptyState.style.display = 'none';
+
+      playlists.forEach((p) => {
+        const card = document.createElement('article');
+        card.className = 'playlist-card';
+
+        card.innerHTML = `
+          <div class="card-cover">
+            <div class="cover-stack">
+              <div class="cover-layer back"></div>
+              <div class="cover-layer front"></div>
+            </div>
+          </div>
+          <h2 class="playlist-title">${p.nomeMusica}</h2>
+          <p class="playlist-artist">${p.artista}</p>
+          <p class="playlist-meta">Ano de lançamento: ${p.ano}</p>
+        `;
+
+        playlistsGrid.appendChild(card);
+      });
+    }
+
+    openFormButton.addEventListener('click', () => toggleForm(true));
+    cancelFormButton.addEventListener('click', () => toggleForm(false));
+
+    playlistForm.addEventListener('submit', (event) => {
+      event.preventDefault();
+
+      const nomeMusica = document.getElementById('nomeMusica').value.trim();
+      const artista    = document.getElementById('artista').value.trim();
+      const ano        = document.getElementById('ano').value.trim();
+
+      if (!nomeMusica || !artista || !ano) {
+        return;
+      }
+
+      playlists.push({ nomeMusica, artista, ano });
+      renderPlaylists();
+      toggleForm(false);
+    });
+
+    // Pré-preenche com 8 "álbuns" só pra ficar igual ao protótipo
+    playlists = [
+      { nomeMusica: 'Álbum 1', artista: 'Artistas', ano: '2024' },
+      { nomeMusica: 'Álbum 2', artista: 'Artistas', ano: '2024' },
+      { nomeMusica: 'Álbum 3', artista: 'Artistas', ano: '2024' },
+      { nomeMusica: 'Álbum 4', artista: 'Artistas', ano: '2024' },
+      { nomeMusica: 'Álbum 5', artista: 'Artistas', ano: '2024' },
+      { nomeMusica: 'Álbum 6', artista: 'Artistas', ano: '2024' },
+      { nomeMusica: 'Álbum 7', artista: 'Artistas', ano: '2024' },
+      { nomeMusica: 'Álbum 8', artista: 'Artistas', ano: '2024' }
+    ];
+    renderPlaylists();
+  </script>
+</body>
+</html>

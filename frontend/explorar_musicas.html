@@ -1,0 +1,118 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Explorar álbuns</title>
+  <!-- Reaproveita o mesmo CSS de minhas_musicas -->
+  <link rel="stylesheet" href="minhas_musicas.css">
+</head>
+<body>
+  <div class="page">
+
+    <header class="header">
+      <div class="heading">
+        <h1>Explorar álbuns</h1>
+        <span class="heading-underline"></span>
+        <p style="margin-top:8px;color:#c7c7c7;font-size:0.9rem;">
+          Veja todos os álbuns criados por usuários neste sistema e escute suas músicas.
+        </p>
+      </div>
+
+      <button type="button"
+              class="ghost-button"
+              onclick="window.location.href='tela_inicial.html'">
+        Voltar
+      </button>
+    </header>
+
+    <main>
+      <section class="grid-section">
+        <p id="emptyState" class="empty-state">
+          Nenhum álbum foi criado ainda.
+        </p>
+
+        <div id="albunsGrid" class="album-grid" aria-live="polite"></div>
+      </section>
+    </main>
+
+  </div>
+
+  <script>
+    // Lê todos os álbuns salvos (de todos os usuários) em albunsUsuario
+    function carregarTodosAlbuns() {
+      try {
+        const raw = localStorage.getItem("albunsUsuario");
+        if (!raw) {
+          console.log("Nenhum albunsUsuario encontrado ainda.");
+          return [];
+        }
+
+        const lista = JSON.parse(raw);
+
+        // Garante que não teremos duplicados por id_album
+        const porId = new Map();
+        for (const album of lista) {
+          const key = String(album.id_album);
+          if (!porId.has(key)) {
+            porId.set(key, album);
+          }
+        }
+
+        const todos = Array.from(porId.values());
+        console.log("Álbuns disponíveis para explorar:", todos);
+        return todos;
+      } catch (e) {
+        console.error("Erro ao ler albunsUsuario", e);
+        return [];
+      }
+    }
+
+    function renderAlbunsExplorar() {
+      const albuns = carregarTodosAlbuns();
+      const grid = document.getElementById("albunsGrid");
+      const empty = document.getElementById("emptyState");
+
+      grid.innerHTML = "";
+
+      if (!albuns.length) {
+        empty.style.display = "block";
+        return;
+      }
+
+      empty.style.display = "none";
+
+      albuns.forEach((album) => {
+        const card = document.createElement("article");
+        card.className = "album-card";
+        card.style.cursor = "pointer";
+
+        card.addEventListener("click", () => {
+          // abre em modo somente leitura: sem upload na tela de músicas
+          window.location.href = `musicas.html?id_album=${album.id_album}&readonly=1`;
+        });
+
+        card.innerHTML = `
+          <div class="card-cover">
+            <div class="cover-stack">
+              <div class="cover-layer back"></div>
+              <div class="cover-layer front"></div>
+            </div>
+          </div>
+          <h2 class="album-title">${album.titulo}</h2>
+          <p class="album-artist">${album.artista}</p>
+          <p class="album-meta">
+            Ano: ${album.ano} · Dono: usuário #${album.id_usuario}
+          </p>
+        `;
+
+        grid.appendChild(card);
+      });
+    }
+
+    document.addEventListener("DOMContentLoaded", () => {
+      renderAlbunsExplorar();
+    });
+  </script>
+</body>
+</html>

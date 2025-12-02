@@ -1,0 +1,195 @@
+:root {
+  --bg: #000;
+  --card-bg: #151515;
+  --card-inner: #5fb0e6;
+  --text: #f7f7f7;
+  --muted: #c7c7c7;
+  --accent: #79a6e0;
+}
+
+/* ---------- RESET ---------- */
+
+* {
+  box-sizing: border-box;
+}
+
+body, html {
+  margin: 0;
+  padding: 0;
+  background: var(--bg);
+  color: var(--text);
+  font-family: "Segoe UI", system-ui, sans-serif;
+}
+
+/* ---------- PAGE WRAPPER ---------- */
+
+.page {
+  padding: 32px 48px;
+  max-width: 1100px;
+  margin: 0 auto;
+}
+
+/* ---------- HEADER ---------- */
+
+.header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.heading {
+  margin-bottom: 20px;
+}
+
+.heading h1 {
+  margin: 0;
+  font-size: 2rem;
+  font-weight: 600;
+}
+
+.heading-underline {
+  display: block;
+  width: 240px;
+  height: 4px;
+  background: var(--accent);
+  border-radius: 4px;
+  margin-top: 6px;
+}
+
+/* ---------- BUTTONS ---------- */
+
+.primary-button,
+.ghost-button {
+  border-radius: 999px;
+  padding: 0.65rem 1.4rem;
+  font-size: 0.95rem;
+  cursor: pointer;
+  font-weight: 500;
+  border: none;
+  letter-spacing: 0.02em;
+  transition: 0.2s ease;
+}
+
+.primary-button {
+  background: var(--accent);
+  color: #050816;
+  box-shadow: 0 12px 34px rgba(0, 0, 0, 0.75);
+}
+
+.primary-button:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 16px 46px rgba(0, 0, 0, 1);
+}
+
+.ghost-button {
+  background: transparent;
+  color: var(--text);
+  border: 1px solid rgba(255, 255, 255, 0.25);
+}
+
+.ghost-button:hover {
+  background: rgba(255, 255, 255, 0.07);
+}
+
+/* ---------- MUSIC LIST SECTION ---------- */
+
+.music-section {
+  margin-top: 30px;
+}
+
+.music-section h2 {
+  font-size: 1.4rem;
+  margin-bottom: 16px;
+}
+
+.empty-state {
+  text-align: center;
+  color: var(--muted);
+  margin-top: 40px;
+}
+
+/* ---------- MUSIC CARDS ---------- */
+
+.music-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 22px;
+  margin-top: 20px;
+}
+
+.music-card {
+  background: var(--card-bg);
+  border-radius: 12px;
+  padding: 18px 16px 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  box-shadow: 0 18px 42px rgba(0, 0, 0, 0.9);
+  transition: 0.18s ease;
+}
+
+.music-card:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 24px 60px rgba(0, 0, 0, 1);
+}
+
+.music-title {
+  font-size: 1rem;
+  font-weight: 600;
+}
+
+.music-meta {
+  font-size: 0.85rem;
+  color: var(--muted);
+}
+
+/* ---------- UPLOAD AREA ---------- */
+
+.upload-box {
+  margin-top: 26px;
+  padding: 20px;
+  border-radius: 16px;
+  background: #111;
+  border: 1px solid #222;
+  box-shadow: 0 0 30px rgba(0, 0, 0, 0.4);
+}
+
+.upload-box label {
+  display: block;
+  font-size: 0.9rem;
+  color: var(--muted);
+  margin-bottom: 6px;
+}
+
+.upload-box input[type="file"] {
+  width: 100%;
+  padding: 12px;
+  background: #050505;
+  border: 1px solid #2b2b2b;
+  border-radius: 8px;
+  color: var(--text);
+}
+
+.upload-box input[type="file"]:focus {
+  border-color: var(--accent);
+  outline: none;
+  box-shadow: 0 0 0 1px var(--accent);
+}
+
+/* ---------- RESPONSIVE ---------- */
+
+@media (max-width: 900px) {
+  .music-grid {
+    grid-template-columns: repeat(1, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 600px) {
+  .page {
+    padding: 20px;
+  }
+
+  .heading h1 {
+    font-size: 1.6rem;
+  }
+}

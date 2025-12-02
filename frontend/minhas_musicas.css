@@ -7,20 +7,18 @@
   --accent:#79a6e0;
 }
 
-/* reset básico */
+/* reset */
 *{ box-sizing:border-box; }
-
-html, body{
+html,body{
   height:100%;
   margin:0;
-  font-family: "Segoe UI", system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
+  font-family:"Segoe UI",system-ui,-apple-system,BlinkMacSystemFont,sans-serif;
   background:var(--bg);
   color:var(--text);
 }
 
 .page{
   min-height:100vh;
-  background:var(--bg);
   padding:32px 48px 40px;
 }
 
@@ -46,6 +44,11 @@ html, body{
   margin-top:8px;
   border-radius:4px;
   background:var(--accent);
+}
+
+.header-actions{
+  display:flex;
+  gap:10px;
 }
 
 /* botões */
@@ -83,70 +86,10 @@ html, body{
   background:rgba(255,255,255,0.06);
 }
 
-/* barra de ferramentas (botão adicionar) */
-
-.toolbar{
-  display:flex;
-  justify-content:flex-end;
-  margin-bottom:16px;
-}
-
-/* formulário */
-
-.playlist-form{
-  background:linear-gradient(135deg,#101010,#181818);
-  border-radius:16px;
-  padding:20px 24px 18px;
-  margin-bottom:24px;
-  box-shadow:0 18px 45px rgba(0,0,0,0.9);
-}
-
-.playlist-form.is-hidden{
-  display:none;
-}
-
-.playlist-form h2{
-  margin:0 0 12px;
-  font-size:1.1rem;
-}
-
-.form-row{
-  display:flex;
-  flex-direction:column;
-  margin-bottom:10px;
-}
-
-.form-row label{
-  font-size:0.85rem;
-  color:var(--muted);
-  margin-bottom:4px;
-}
-
-.form-row input{
-  background:#050505;
-  border-radius:8px;
-  border:1px solid #2b2b2b;
-  padding:0.55rem 0.7rem;
-  color:var(--text);
-}
-
-.form-row input:focus{
-  outline:none;
-  border-color:var(--accent);
-  box-shadow:0 0 0 1px var(--accent);
-}
-
-.form-actions{
-  display:flex;
-  justify-content:flex-end;
-  gap:8px;
-  margin-top:8px;
-}
-
-/* grade / cards */
+/* grade */
 
 .grid-section{
-  margin-top:16px;
+  margin-top:8px;
 }
 
 .empty-state{
@@ -155,7 +98,7 @@ html, body{
   color:var(--muted);
 }
 
-.playlist-grid{
+.album-grid{
   margin-top:8px;
   display:grid;
   grid-template-columns:repeat(4,minmax(0,1fr));
@@ -164,7 +107,7 @@ html, body{
 
 /* card */
 
-.playlist-card{
+.album-card{
   background:var(--card-bg);
   border-radius:12px;
   padding:18px 16px 20px;
@@ -176,12 +119,12 @@ html, body{
   transition:transform .18s ease, box-shadow .18s ease;
 }
 
-.playlist-card:hover{
+.album-card:hover{
   transform:translateY(-6px);
   box-shadow:0 24px 60px rgba(0,0,0,1);
 }
 
-/* “capa” azul com ícone de imagens sobrepostas */
+/* “capa” azul */
 
 .card-cover{
   width:120px;
@@ -217,40 +160,33 @@ html, body{
   transform:translate(-4px,4px);
 }
 
-.playlist-title{
+.album-title{
   margin:0;
   font-size:1rem;
   font-weight:600;
-  color:var(--text);
 }
 
-.playlist-artist{
+.album-artist{
   margin:4px 0 2px;
   font-size:0.9rem;
   color:var(--muted);
 }
 
-.playlist-meta{
+.album-meta{
   margin:0;
   font-size:0.8rem;
   color:var(--muted);
 }
 
-/* responsividade */
+/* responsivo */
 
 @media (max-width:1024px){
-  .playlist-grid{
-    grid-template-columns:repeat(3,minmax(0,1fr));
-  }
-  .page{
-    padding:24px 24px 32px;
-  }
+  .album-grid{ grid-template-columns:repeat(3,minmax(0,1fr)); }
+  .page{ padding:24px 24px 32px; }
 }
 
 @media (max-width:768px){
-  .playlist-grid{
-    grid-template-columns:repeat(2,minmax(0,1fr));
-  }
+  .album-grid{ grid-template-columns:repeat(2,minmax(0,1fr)); }
   .header{
     flex-direction:column;
     align-items:flex-start;
@@ -259,10 +195,6 @@ html, body{
 }
 
 @media (max-width:480px){
-  .playlist-grid{
-    grid-template-columns:minmax(0,1fr);
-  }
-  .page{
-    padding:20px 16px 28px;
-  }
+  .album-grid{ grid-template-columns:minmax(0,1fr); }
+  .page{ padding:20px 16px 28px; }
 }

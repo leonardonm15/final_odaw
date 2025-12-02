@@ -1,0 +1,298 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Músicas do álbum</title>
+  <link rel="stylesheet" href="musicas.css">
+</head>
+<body>
+  <div class="page">
+
+    <header class="header">
+      <div class="heading">
+        <h1 id="tituloPagina">Músicas do álbum</h1>
+        <span class="heading-underline"></span>
+        <p id="albumSubtitulo" style="margin-top:8px;color:#c7c7c7;font-size:0.9rem;"></p>
+      </div>
+
+      <button class="ghost-button" onclick="history.back()">
+        Voltar
+      </button>
+    </header>
+
+    <section class="music-section">
+      <h2>Lista de músicas</h2>
+
+      <p id="emptyState" class="empty-state">
+        Nenhuma música enviada ainda.
+      </p>
+
+      <div id="musicGrid" class="music-grid"></div>
+    </section>
+
+    <section class="upload-box">
+      <label for="fileInput">Enviar nova música para este álbum</label>
+      <input type="file" id="fileInput" accept="audio/*">
+      <button id="uploadButton" class="primary-button" style="margin-top:10px;">
+        Fazer upload
+      </button>
+      <p id="uploadMsg" class="msg" style="margin-top:6px;font-size:0.85rem;color:#ffb3b3;"></p>
+    </section>
+
+  </div>
+
+  <script>
+    const API_BASE = "http://localhost:8000";
+
+    // Lê usuário logado (aceita usuarioLogado ou usuariologado)
+    function getUsuarioLogado() {
+      try {
+        const raw =
+          localStorage.getItem("usuarioLogado") ||
+          localStorage.getItem("usuariologado");
+
+        if (!raw) {
+          console.warn("Nenhum usuário logado encontrado no localStorage");
+          return null;
+        }
+
+        const user = JSON.parse(raw);
+        console.log("Usuário logado em musicas.html:", user);
+        return user;
+      } catch (e) {
+        console.error("Erro ao ler usuarioLogado/usuariologado", e);
+        return null;
+      }
+    }
+
+    // Busca info do álbum salvo no localStorage (albunsUsuario)
+    function getAlbumAtual(id_album, id_usuario) {
+      try {
+        const raw = localStorage.getItem("albunsUsuario");
+        if (!raw) return null;
+        const lista = JSON.parse(raw);
+
+        // tenta primeiro bater id_album + id_usuario
+        let album = lista.find(
+          (a) =>
+            String(a.id_album) === String(id_album) &&
+            String(a.id_usuario) === String(id_usuario)
+        );
+        if (album) return album;
+
+        // fallback: qualquer álbum com esse id_album (para explorar álbuns de outros usuários)
+        album = lista.find(
+          (a) => String(a.id_album) === String(id_album)
+        );
+        return album || null;
+      } catch (e) {
+        console.error("Erro ao ler albunsUsuario", e);
+        return null;
+      }
+    }
+
+    // devolve a URL do arquivo de áudio da música
+    function getMusicUrl(musica) {
+      // Se o backend já retornar uma URL pronta, use ela:
+      if (musica.url_arquivo) return musica.url_arquivo;
+      if (musica.url) return musica.url;
+      if (musica.caminho) return `${API_BASE}/${musica.caminho}`;
+
+      // Fallback genérico baseado no id_musica:
+      // TROQUE esse caminho se o seu backend usar outro endpoint!
+      if (musica.id_musica != null) {
+        return `${API_BASE}/musicas/arquivo/${musica.id_musica}`;
+      }
+      return null;
+    }
+
+    // Renderiza lista de músicas na tela (com player de áudio)
+    function renderMusicas(musicas) {
+      const grid = document.getElementById("musicGrid");
+      const empty = document.getElementById("emptyState");
+
+      grid.innerHTML = "";
+
+      if (!musicas || !musicas.length) {
+        empty.style.display = "block";
+        return;
+      }
+
+      empty.style.display = "none";
+
+      musicas.forEach((musica) => {
+        const card = document.createElement("article");
+        card.className = "music-card";
+
+        const nome =
+          musica.nome_arquivo ||
+          musica.nome ||
+          musica.titulo ||
+          musica.nome_musica ||
+          `Música #${musica.id_musica || ""}`;
+
+        const detalhe =
+          musica.tipo ||
+          musica.formato ||
+          musica.mimetype ||
+          "";
+
+        const url = getMusicUrl(musica);
+
+        card.innerHTML = `
+          <div class="music-title">${nome}</div>
+          <div class="music-meta">
+            ${detalhe ? detalhe + " · " : ""}ID: ${musica.id_musica ?? "—"}
+          </div>
+          ${
+            url
+              ? `<audio controls style="margin-top:8px;width:100%;">
+                   <source src="${url}">
+                   Seu navegador não suporta áudio HTML5.
+                 </audio>`
+              : `<div class="music-meta" style="margin-top:8px;color:#ffb3b3;">
+                   (Não foi possível determinar a URL do áudio)
+                 </div>`
+          }
+        `;
+
+        grid.appendChild(card);
+      });
+    }
+
+    // Carrega músicas do backend e FILTRA por álbum
+    // se readonly = false, também filtra por usuário; se true, ignora usuário
+    async function carregarMusicas(id_album, id_usuario, readonly) {
+      try {
+        const res = await fetch(
+          `${API_BASE}/musicas?id_album=${encodeURIComponent(id_album)}`
+        );
+        if (!res.ok) {
+          console.error("Erro ao buscar músicas:", res.status);
+          return;
+        }
+
+        const data = await res.json();
+        console.log("Músicas recebidas do backend:", data);
+
+        // Garante que temos um array
+        let lista = Array.isArray(data) ? data : (data.musicas || []);
+
+        // 🔥 FILTRO POR ÁLBUM (sempre) e por USUÁRIO somente se não for readonly
+        lista = lista.filter((m) => {
+          if (m.id_album !== undefined && m.id_album !== null) {
+            if (String(m.id_album) !== String(id_album)) return false;
+          }
+          if (!readonly && m.id_usuario !== undefined && m.id_usuario !== null) {
+            if (String(m.id_usuario) !== String(id_usuario)) return false;
+          }
+          return true;
+        });
+
+        console.log("Músicas após filtro por álbum/usuário:", lista);
+        renderMusicas(lista);
+      } catch (e) {
+        console.error("Erro de conexão ao buscar músicas:", e);
+      }
+    }
+
+    // Faz upload de uma música
+    async function uploadMusica(id_album, id_usuario) {
+      const fileInput = document.getElementById("fileInput");
+      const msg = document.getElementById("uploadMsg");
+      msg.style.color = "#ffb3b3";
+      msg.textContent = "";
+
+      if (!fileInput.files.length) {
+        msg.textContent = "Selecione um arquivo de áudio primeiro.";
+        return;
+      }
+
+      const file = fileInput.files[0];
+
+      const formData = new FormData();
+      // ⚠️ Se no backend o nome do campo for diferente, troca aqui
+      formData.append("arquivo", file);
+
+      try {
+        const res = await fetch(
+          `${API_BASE}/musicas?id_album=${encodeURIComponent(id_album)}`,
+          {
+            method: "POST",
+            body: formData,
+          }
+        );
+
+        const data = await res.json();
+        console.log("Resposta upload:", data);
+
+        if (!res.ok) {
+          msg.textContent = data.detail || "Erro ao enviar música.";
+          return;
+        }
+
+        msg.style.color = "#9ae6b4";
+        msg.textContent = "Música enviada com sucesso!";
+        fileInput.value = "";
+
+        // recarrega lista, já com filtro
+        await carregarMusicas(id_album, id_usuario, false);
+      } catch (e) {
+        console.error("Erro de conexão no upload:", e);
+        msg.textContent = "Erro de conexão com o servidor.";
+      }
+    }
+
+    document.addEventListener("DOMContentLoaded", () => {
+      // 1) garantir login
+      const user = getUsuarioLogado();
+      if (!user) {
+        alert("Você precisa estar logado para ver as músicas.");
+        window.location.href = "login.html";
+        return;
+      }
+
+      // 2) pegar params da URL
+      const params = new URLSearchParams(window.location.search);
+      const id_album = params.get("id_album");
+      const readonly = params.get("readonly") === "1"; // 👈 modo somente leitura
+
+      if (!id_album) {
+        document.getElementById("emptyState").textContent =
+          "Erro: nenhum álbum selecionado (id_album ausente na URL).";
+        return;
+      }
+
+      // 3) mostrar info do álbum
+      const album = getAlbumAtual(id_album, user.id_usuario);
+      if (album) {
+        const tituloPagina = document.getElementById("tituloPagina");
+        const subtitulo = document.getElementById("albumSubtitulo");
+        tituloPagina.textContent = `Músicas de "${album.titulo}"`;
+        subtitulo.textContent = `${album.artista} · Ano ${album.ano}`;
+      }
+
+      // 4) se readonly, esconde a área de upload
+      if (readonly) {
+        const uploadBox = document.querySelector(".upload-box");
+        if (uploadBox) uploadBox.style.display = "none";
+      }
+
+      // 5) carregar músicas desse álbum (com filtro por álbum/usuário ou só por álbum)
+      carregarMusicas(id_album, user.id_usuario, readonly);
+
+      // 6) ligar botão de upload somente se NÃO for readonly
+      if (!readonly) {
+        const uploadButton = document.getElementById("uploadButton");
+        if (uploadButton) {
+          uploadButton.addEventListener("click", () =>
+            uploadMusica(id_album, user.id_usuario)
+          );
+        }
+      }
+    });
+  </script>
+
+</body>
+</html>

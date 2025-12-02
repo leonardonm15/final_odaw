@@ -50,7 +50,8 @@
 
         if(res.ok){
           /* document.getElementById('message').textContent = "Login realizado!"; */
-          console.log("Redirecionando...");
+          localStorage.setItem("usuarioLogado", JSON.stringify(data));
+          console.log("Login ok, usuário salvo:", data);
           window.location.replace("tela_inicial.html");
         } else {
           document.getElementById('message').textContent = data.detail || "Erro no login.";

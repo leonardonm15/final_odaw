@@ -1,0 +1,120 @@
+:root{
+  --bg:#000;
+  --card-bg:#151515;
+  --text:#f7f7f7;
+  --muted:#c7c7c7;
+  --accent:#79a6e0;
+}
+
+*{ box-sizing:border-box; }
+
+html,body{
+  margin:0;
+  height:100%;
+  font-family:"Segoe UI",system-ui,-apple-system,BlinkMacSystemFont,sans-serif;
+  background:var(--bg);
+  color:var(--text);
+}
+
+.wrap{
+  min-height:100vh;
+  padding:32px 20px 40px;
+  display:flex;
+  flex-direction:column;
+  align-items:center;
+}
+
+.header{
+  width:100%;
+  max-width:720px;
+  display:flex;
+  justify-content:space-between;
+  align-items:center;
+  margin-bottom:24px;
+}
+
+.header h1{
+  margin:0;
+  font-size:1.7rem;
+}
+
+.primary-button,
+.ghost-button{
+  border-radius:999px;
+  padding:0.55rem 1.3rem;
+  font-size:0.95rem;
+  font-weight:500;
+  cursor:pointer;
+  border:none;
+  letter-spacing:0.02em;
+  transition:background .18s ease, transform .18s ease, box-shadow .18s ease, border-color .18s ease;
+}
+
+.primary-button{
+  background:var(--accent);
+  color:#050816;
+  box-shadow:0 10px 28px rgba(0,0,0,0.7);
+}
+
+.primary-button:hover{
+  transform:translateY(-1px);
+  box-shadow:0 14px 36px rgba(0,0,0,0.85);
+}
+
+.ghost-button{
+  background:transparent;
+  color:var(--text);
+  border:1px solid rgba(255,255,255,0.25);
+}
+
+.ghost-button:hover{
+  background:rgba(255,255,255,0.06);
+}
+
+.card{
+  width:100%;
+  max-width:720px;
+  background:var(--card-bg);
+  border-radius:16px;
+  padding:24px 22px 20px;
+  box-shadow:0 18px 45px rgba(0,0,0,0.9);
+}
+
+.field{
+  display:flex;
+  flex-direction:column;
+  margin-bottom:14px;
+}
+
+.field label{
+  font-size:0.9rem;
+  color:var(--muted);
+  margin-bottom:4px;
+}
+
+.field input{
+  background:#050505;
+  border-radius:8px;
+  border:1px solid #2b2b2b;
+  padding:0.6rem 0.7rem;
+  color:var(--text);
+}
+
+.field input:focus{
+  outline:none;
+  border-color:var(--accent);
+  box-shadow:0 0 0 1px var(--accent);
+}
+
+.msg{
+  min-height:1.2rem;
+  font-size:0.85rem;
+  color:#ffb3b3;
+  margin:4px 0 0;
+}
+
+.actions{
+  margin-top:14px;
+  display:flex;
+  justify-content:flex-end;
+}
